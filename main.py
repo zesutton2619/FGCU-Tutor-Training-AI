@@ -62,7 +62,6 @@ def generate_response(message_body, user_wa_id, name):
     # Run the assistant and get the new message
     new_message = run_assistant(thread)
 
-    #  store_conversation(user_wa_id, message, new_message)
     print(f"To {name}:", new_message)
     return new_message
 
@@ -77,7 +76,7 @@ def run_assistant(thread):
     # Run the assistant
     run = client.beta.threads.runs.create(
         thread_id=thread.id,
-        assistant_id=assistant.id,
+        assistant_id=assistan.id,
     )
 
     # Wait for completion
@@ -96,29 +95,36 @@ def run_assistant(thread):
 
 
 # Function to store conversation in the database
-def store_conversation(messages):
-    user_message = None
-    assistant_message = None
+def store_conversation(conversation):
+    thread_id = conversation.data[0].thread_id
 
-    for message in messages.data:
+    user_messages = []
+    assistant_messages = []
+
+    for message in conversation.data:
         if message.role == "user":
-            user_message = {
+            user_messages.append({
                 "content": message.content[0].text.value,
                 "timestamp": message.created_at
-            }
+            })
         elif message.role == "assistant":
-            assistant_message = {
+            assistant_messages.append({
                 "content": message.content[0].text.value,
                 "timestamp": message.created_at
-            }
+            })
 
-    if user_message and assistant_message:
-        conversation_data = {
-            "wa_id": messages.data[0].thread_id,
-            "user_message": user_message,
-            "assistant_message": assistant_message
-        }
-        conversations_collection.insert_one(conversation_data)
+    # Update existing document or insert new document
+    conversation_data = {
+        "thread_id": thread_id,
+        "user_message": user_messages,
+        "assistant_message": assistant_messages
+    }
+
+    conversations_collection.replace_one(
+        {"thread_id": thread_id},
+        conversation_data,
+        upsert=True
+    )
 
 
 # --------------------------------------------------------------
