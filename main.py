@@ -76,7 +76,7 @@ def run_assistant(thread):
     # Run the assistant
     run = client.beta.threads.runs.create(
         thread_id=thread.id,
-        assistant_id=assistan.id,
+        assistant_id=assistant.id,
     )
 
     # Wait for completion
