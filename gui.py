@@ -1,10 +1,12 @@
 import ttkbootstrap as tb
-import backend
+from backend import Backend
 
 
 class GUI:
     def __init__(self, root):
         self.root = root
+        self.backend = Backend()
+        self.backend.create_conversation_name()  # initialize conversation name
         self.previous_conversation_loaded = False
         self.root.title("FGCU Training AI")
         self.root.iconbitmap('images/icon.ico')
@@ -69,8 +71,8 @@ class GUI:
         self.conversation_text.config(state='normal')  # Set state to normal to allow editing
         self.conversation_text.insert(tb.END, f"User: {message}\n")
         # response = "test response"  # Replace with actual response
-        conversation_name = backend.get_conversation_name()
-        response = backend.generate_response(message, 938, 'Zach', conversation_name)
+        conversation_name = self.backend.get_conversation_name()
+        response = self.backend.generate_response(message, 938, 'Zach', conversation_name)
         self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
         self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
@@ -87,8 +89,8 @@ class GUI:
         # Clear the conversation display area
         self.clear_conversation()
 
-        backend.create_conversation_name()  # create new conversation name
-        print("new conversation name:  ", backend.get_conversation_name())
+        self.backend.create_conversation_name()  # create new conversation name
+        print("new conversation name:  ", self.backend.get_conversation_name())
         print("Conversation cleared. You can start a new conversation now.")
 
     def load_previous_conversations(self):
@@ -98,7 +100,7 @@ class GUI:
             self.tree.delete(item)
 
         # Retrieve previous conversations from the backend
-        previous_conversations = backend.retrieve_previous_conversation_names(938)
+        previous_conversations = self.backend.retrieve_previous_conversation_names(938)
 
         # Insert previous conversations into the TreeView
         for conversation in previous_conversations:
@@ -120,11 +122,11 @@ class GUI:
         user_id = 938
         print("conversation name", conversation_name)
         # Retrieve the conversation from the backend
-        conversation = backend.retrieve_previous_conversation(user_id, conversation_name)
+        conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
         # print(conversation)
         if conversation:
             # Format the conversation for display
-            formatted_conversation = backend.format_conversation(conversation)
+            formatted_conversation = self.backend.format_conversation(conversation)
             print("formatting done")
             # Display the selected conversation in the conversation text widget
             self.conversation_text.config(state='normal')  # Set state to normal to allow editing
@@ -149,4 +151,3 @@ def start_gui():
     root = tb.Window(themename='cyborg')
     gui = GUI(root)
     root.mainloop()
-
