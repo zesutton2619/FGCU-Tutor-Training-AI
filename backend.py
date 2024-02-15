@@ -1,7 +1,6 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 from pymongo import MongoClient
-import certifi
 import time
 import os
 import datetime
@@ -9,7 +8,6 @@ import random
 import string
 
 load_dotenv()
-ca = certifi.where()
 
 
 class Backend:
@@ -22,6 +20,7 @@ class Backend:
         self.db = self.client_mongo["Test"]  # Replace with your actual database name
         self.threads_collection = self.db["Threads"]  # Thread collection inside Test database
         self.conversations_collection = self.db["Conversations"]  # Conversations collection inside Test database
+        self.user_id_collection = self.db["User ID"]  # User ID collection inside Test database
         self.global_conversation_name = ''
         self.global_user_id = 0
 
@@ -43,6 +42,20 @@ class Backend:
     def create_conversation_name(self):
         self.global_conversation_name = self.generate_random_name()
         return self.global_conversation_name
+
+    def check_username(self, username):
+        user_data = self.user_id_collection.find_one({"username": username})
+        if user_data:
+            self.global_user_id = user_data["user_id"]
+            return self.global_user_id
+        else:
+            self.global_user_id = self.generate_user_id()
+            self.user_id_collection.insert_one(
+                {
+                    "user_id": self.global_user_id,
+                    "username": username
+                }
+            )
 
     # --------------------------------------------------------------
     # Thread management
@@ -131,7 +144,7 @@ class Backend:
         conversation_data = {
             "thread_id": thread_id,
             "user_id": user_id,
-            "user_name": name,
+            "username": name,
             "conversation_name": conversation_name,
             "user_messages": user_messages,
             "assistant_messages": assistant_messages
