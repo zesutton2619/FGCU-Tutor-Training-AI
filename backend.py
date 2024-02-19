@@ -27,6 +27,29 @@ class Backend:
         self.global_user_id = random.randint(100, 999)
         return self.global_user_id
 
+    def create_conversation_name(self):
+        # Check if there are existing conversations for the current user
+        existing_conversations = self.conversations_collection.count_documents({'user_id': self.global_user_id})
+
+        if existing_conversations == 0:
+            # If no conversations exist, start with "Conversation 1"
+            self.global_conversation_name = "Conversation 1"
+        else:
+            # Find the maximum conversation number among existing conversations
+            max_conversation_number = 0
+            for conversation in self.conversations_collection.find({'user_id': self.global_user_id}):
+                conversation_name = conversation["conversation_name"]
+                # Extract the numeric part from the conversation name if it follows the expected format
+                if conversation_name.startswith("Conversation "):
+                    conversation_number = int(conversation_name.split(" ")[-1])
+                    max_conversation_number = max(max_conversation_number, conversation_number)
+
+            # Increment the maximum conversation number to generate the next conversation name
+            new_conversation_number = max_conversation_number + 1
+            self.global_conversation_name = f"Conversation {new_conversation_number}"
+
+        return self.global_conversation_name
+
     @staticmethod
     def generate_random_name(length=8):
         letters = string.ascii_letters
@@ -36,10 +59,6 @@ class Backend:
         return self.global_user_id
 
     def get_conversation_name(self):
-        return self.global_conversation_name
-
-    def create_conversation_name(self):
-        self.global_conversation_name = self.generate_random_name()
         return self.global_conversation_name
 
     def check_username(self, username):

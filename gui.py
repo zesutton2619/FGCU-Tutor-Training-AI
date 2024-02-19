@@ -61,7 +61,6 @@ class GUI:
         self.first_name = None
         self.root = root
         self.backend = Backend()
-        self.backend.create_conversation_name()  # initialize conversation name
         self.previous_conversation_loaded = False
         self.root.title("FGCU Training AI")
         self.root.iconbitmap('images/icon.ico')
@@ -80,6 +79,7 @@ class GUI:
     def on_login(self, first_name):
         self.first_name = first_name
         self.backend.check_username(first_name)
+        self.backend.create_conversation_name()  # initialize conversation name
         if self.login_frame:
             self.login_frame.frame.pack_forget()  # Hide the login frame
         self.show_main_frame()
