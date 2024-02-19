@@ -1,4 +1,5 @@
 import ttkbootstrap as tb
+from tkinter import messagebox
 from backend import Backend
 from PIL import Image, ImageTk
 
@@ -37,6 +38,11 @@ class LoginFrame:
 
     def login(self):
         first_name = self.entry.get()
+        if first_name == '':
+            login_label = tb.Label(self.frame, text='Please enter your First Name', font=('Arial', 18),
+                                   background='#cdcfcd', foreground='black')
+            login_label.place(relx=0.5, rely=0.60, anchor=tb.CENTER)
+            return
         self.on_login(first_name)
 
 
@@ -117,7 +123,7 @@ class GUI:
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
         self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH)
 
-        self.logout_button = tb.Button(self.tree_frame, text="Logout", command=self.logout)
+        self.logout_button = tb.Button(self.tree_frame, text="Logout", command=self.logout, style='danger')
         self.logout_button.pack(side=tb.BOTTOM, pady=10, anchor='sw')
 
         # Create the TreeView
@@ -138,7 +144,9 @@ class GUI:
             self.previous_conversation_loaded = False
         # Get the message from the entry box
         message = self.add_message_entry.get()
-
+        if message == '':
+            messagebox.showwarning('Error', 'Please enter your message')
+            return
         # Simulate adding a message to the conversation display
         self.conversation_text.config(state='normal')  # Set state too normal to allow editing
         self.conversation_text.insert(tb.END, f"User: {message}\n")
@@ -155,6 +163,13 @@ class GUI:
         self.conversation_text.see(tb.END)
 
     def save_conversation(self):
+        if self.is_conversation_empty():
+            messagebox.showwarning('Error', 'Cannot save empty conversation')
+            return
+        elif self.previous_conversation_loaded:
+            messagebox.showwarning('Error', 'Cannot save previously loaded conversation')
+            return
+
         # reload previous conversations
         self.load_previous_conversations()
 
@@ -164,6 +179,12 @@ class GUI:
         self.backend.create_conversation_name()  # create new conversation name
         print("new conversation name:  ", self.backend.get_conversation_name())
         print("Conversation cleared. You can start a new conversation now.")
+
+    def is_conversation_empty(self):
+        # Get the content of the conversation text widget
+        conversation_content = self.conversation_text.get("1.0", tb.END).strip()
+        # Check if the content is empty
+        return not conversation_content
 
     def load_previous_conversations(self):
         self.previous_conversation_loaded = True

@@ -18,7 +18,6 @@ class Backend:
         MONGO_URI = os.getenv("MONGO_URI")
         self.client_mongo = MongoClient(MONGO_URI)
         self.db = self.client_mongo["Test"]  # Replace with your actual database name
-        self.threads_collection = self.db["Threads"]  # Thread collection inside Test database
         self.conversations_collection = self.db["Conversations"]  # Conversations collection inside Test database
         self.user_id_collection = self.db["User ID"]  # User ID collection inside Test database
         self.global_conversation_name = ''
@@ -63,13 +62,8 @@ class Backend:
 
     def check_if_thread_exists(self, user_id, conversation_name):
         # filter by user_id and conversation name and look for thread id
-        thread = self.threads_collection.find_one({"user_id": user_id, "conversation_name": conversation_name})
+        thread = self.conversations_collection.find_one({"user_id": user_id, "conversation_name": conversation_name})
         return thread["thread_id"] if thread else None
-
-    def store_thread(self, user_id, thread_id, conversation_name):
-        # Store thread in collection with user_id and conversation_name
-        thread_data = {"user_id": user_id, "thread_id": thread_id, "conversation_name": conversation_name}
-        self.threads_collection.insert_one(thread_data)
 
     # --------------------------------------------------------------
     # Generate response
@@ -81,7 +75,6 @@ class Backend:
         if thread_id is None:
             print(f"Creating new thread for {name} with user_id {user_id}")
             thread = self.client.beta.threads.create()
-            self.store_thread(user_id, thread.id, conversation_name)
             thread_id = thread.id
         else:
             print(f"Retrieving existing thread for {name} with wa_id {user_id}")
