@@ -5,7 +5,6 @@ import time
 import os
 import datetime
 import random
-import string
 
 load_dotenv()
 
@@ -49,11 +48,6 @@ class Backend:
             self.global_conversation_name = f"Conversation {new_conversation_number}"
 
         return self.global_conversation_name
-
-    @staticmethod
-    def generate_random_name(length=8):
-        letters = string.ascii_letters
-        return ''.join(random.choice(letters) for _ in range(length))
 
     def get_user_id(self):
         return self.global_user_id
@@ -173,7 +167,11 @@ class Backend:
     # --------------------------------------------------------------
 
     def retrieve_previous_conversation_names(self, user_id):
-        conversation_names = self.conversations_collection.distinct("conversation_name", {"user_id": user_id})
+        conversation_names = []
+        conversations = self.conversations_collection.find({"user_id": user_id})
+        for conversation in conversations:
+            conversation = conversation['conversation_name']
+            conversation_names.append(conversation)
         return conversation_names
 
     # --------------------------------------------------------------
@@ -202,7 +200,7 @@ class Backend:
 
         user_messages = conversation.get("user_messages", [])
         assistant_messages = conversation.get("assistant_messages", [])
-        user_name = conversation.get('user_name', 'User')
+        user_name = conversation.get('username', 'User')
         combined_messages = sorted(user_messages + assistant_messages, key=lambda x: x['timestamp'])
 
         for message in combined_messages:
@@ -215,3 +213,13 @@ class Backend:
             formatted_conversation += f"({timestamp_str}) {role}: {content}\n"
         # print(formatted_conversation)
         return formatted_conversation
+
+    # --------------------------------------------------------------
+    # Remove conversation
+    # --------------------------------------------------------------
+
+    def remove_conversation(self, conversation_name):
+        print("user id", self.global_user_id)
+        print("conversation name: ", conversation_name)
+        self.conversations_collection.find_one_and_delete({'user_id': self.global_user_id,
+                                                           'conversation_name': conversation_name})

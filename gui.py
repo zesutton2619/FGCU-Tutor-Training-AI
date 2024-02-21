@@ -30,6 +30,7 @@ class LoginFrame:
 
         # Create the entry box
         self.entry = tb.Entry(self.frame, width=30, font=('Arial', 14))
+        self.entry.bind("<Return>", lambda event: self.login())
         self.entry.place(relx=0.5, rely=0.5, anchor=tb.CENTER)
 
         # Create the login button
@@ -48,16 +49,18 @@ class LoginFrame:
 
 class GUI:
     def __init__(self, root):
-        self.logout_button = None
-        self.tree = None
-        self.tree_frame = None
-        self.add_message_button = None
-        self.add_message_entry = None
-        self.input_frame = None
-        self.save_button = None
-        self.scrollbar = None
-        self.conversation_text = None
         self.conversation_frame = None
+        self.input_frame = None
+        self.tree_frame = None
+        self.tree = None
+        self.scrollbar = None
+        self.add_message_button = None
+        self.logout_button = None
+        self.save_button = None
+        self.delete_button = None
+        self.conversation_text = None
+        self.add_message_entry = None
+        self.message = None
         self.first_name = None
         self.root = root
         self.backend = Backend()
@@ -80,6 +83,8 @@ class GUI:
         self.first_name = first_name
         self.backend.check_username(first_name)
         self.backend.create_conversation_name()  # initialize conversation name
+        # self.message = 'Start'
+        # self.add_message()
         if self.login_frame:
             self.login_frame.frame.pack_forget()  # Hide the login frame
         self.show_main_frame()
@@ -112,12 +117,17 @@ class GUI:
         self.add_message_entry.pack(side=tb.LEFT, padx=(0, 5))
 
         # Add the enter button
-        self.add_message_button = tb.Button(self.input_frame, text="Enter", command=self.add_message)
+        self.add_message_button = tb.Button(self.input_frame, text="Enter", command=self.add_message, style='success')
         self.add_message_button.pack(side=tb.LEFT)
 
         # Add the save button
         self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
         self.save_button.pack(side=tb.RIGHT)
+
+        # Add the delete button
+        self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
+                                       style='warning')
+        self.delete_button.pack(side=tb.RIGHT, padx=10)
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
@@ -142,17 +152,24 @@ class GUI:
         if self.previous_conversation_loaded:
             self.clear_conversation()
             self.previous_conversation_loaded = False
+
         # Get the message from the entry box
-        message = self.add_message_entry.get()
-        if message == '':
+        self.message = self.add_message_entry.get()
+
+        if self.message == '':
             messagebox.showwarning('Error', 'Please enter your message')
             return
+
         # Simulate adding a message to the conversation display
         self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-        self.conversation_text.insert(tb.END, f"User: {message}\n")
+
+        if self.message != 'Start':
+            # Show user's message only if it's not 'Start'
+            self.conversation_text.insert(tb.END, f"User: {self.message}\n")
+
         conversation_name = self.backend.get_conversation_name()
         user_id = self.backend.get_user_id()
-        response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
+        response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
         self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
         self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
@@ -185,6 +202,25 @@ class GUI:
         conversation_content = self.conversation_text.get("1.0", tb.END).strip()
         # Check if the content is empty
         return not conversation_content
+
+    def delete_conversation(self):
+        if not self.is_conversation_empty():
+            # Get the selected conversation
+            selected_item = self.tree.selection()
+            conversation_name = self.tree.item(selected_item, 'text')
+
+            # Prompt the user for confirmation
+            confirmed = messagebox.askyesno("Confirmation",
+                                            f"Are you sure you want to delete the conversation '{conversation_name}'?")
+
+            if confirmed:
+                # If user confirms deletion, proceed with deletion
+                self.backend.remove_conversation(conversation_name)
+                self.load_previous_conversations()
+                self.clear_conversation()
+                print("Deleting conversation")
+        else:
+            messagebox.showwarning('Error', 'Cannot delete empty conversation')
 
     def load_previous_conversations(self):
         self.previous_conversation_loaded = True
