@@ -58,6 +58,7 @@ class GUI:
         self.logout_button = None
         self.save_button = None
         self.delete_button = None
+        self.start_conversation_button = None
         self.conversation_text = None
         self.add_message_entry = None
         self.message = None
@@ -65,6 +66,7 @@ class GUI:
         self.root = root
         self.backend = Backend()
         self.previous_conversation_loaded = False
+        self.started_conversation = False
         self.root.title("FGCU Training AI")
         self.root.iconbitmap('images/icon.ico')
         self.root.state('zoomed')
@@ -129,6 +131,11 @@ class GUI:
                                        style='warning')
         self.delete_button.pack(side=tb.RIGHT, padx=10)
 
+        # Add start conversation button
+        self.start_conversation_button = tb.Button(self.input_frame, text="Start Conversation",
+                                                   command=self.start_conversation, style='success')
+        self.start_conversation_button.pack(side=tb.RIGHT, padx=10)
+
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
         self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH)
@@ -148,30 +155,42 @@ class GUI:
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
 
-    def add_message(self):
+    def start_conversation(self):
         if self.previous_conversation_loaded:
+            self.clear_conversation()
+
+        self.message = 'Start'
+        self.started_conversation = True
+        self.add_message()
+
+    def add_message(self):
+        if not self.started_conversation and self.previous_conversation_loaded:
+            messagebox.showwarning('Error', 'You must start a conversation first')
+            return
+        elif self.previous_conversation_loaded:
             self.clear_conversation()
             self.previous_conversation_loaded = False
 
-        # Get the message from the entry box
-        self.message = self.add_message_entry.get()
-
-        if self.message == '':
-            messagebox.showwarning('Error', 'Please enter your message')
-            return
-
-        # Simulate adding a message to the conversation display
         self.conversation_text.config(state='normal')  # Set state too normal to allow editing
+        message = self.add_message_entry.get()
+        if self.message == 'Start':
+            conversation_name = self.backend.get_conversation_name()
+            user_id = self.backend.get_user_id()
+            response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
+            self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
+            self.message = ''
+        elif message == '' and self.started_conversation:
+            messagebox.showwarning('Error', 'Enter a message')
+            return
+        else:
+            message = self.add_message_entry.get()
+            self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n")
+            conversation_name = self.backend.get_conversation_name()
+            user_id = self.backend.get_user_id()
+            response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
+            self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
 
-        if self.message != 'Start':
-            # Show user's message only if it's not 'Start'
-            self.conversation_text.insert(tb.END, f"User: {self.message}\n")
-
-        conversation_name = self.backend.get_conversation_name()
-        user_id = self.backend.get_user_id()
-        response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
-        self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
-        self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
+        self.conversation_text.config(state='disabled')
 
         # Clear the entry box after adding the message
         self.add_message_entry.delete(0, tb.END)
@@ -180,6 +199,7 @@ class GUI:
         self.conversation_text.see(tb.END)
 
     def save_conversation(self):
+        self.started_conversation = False
         if self.is_conversation_empty():
             messagebox.showwarning('Error', 'Cannot save empty conversation')
             return
@@ -223,6 +243,7 @@ class GUI:
             messagebox.showwarning('Error', 'Cannot delete empty conversation')
 
     def load_previous_conversations(self):
+        self.started_conversation = False
         self.previous_conversation_loaded = True
         # Clear existing items in the TreeView
         for item in self.tree.get_children():
@@ -248,7 +269,6 @@ class GUI:
         # Retrieve the conversation name associated with the selected item
         conversation_name = self.tree.item(selected_item, 'text')
 
-        # Retrieve the user_id (replace '938' with the actual user_id)
         user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
         # Retrieve the conversation from the backend

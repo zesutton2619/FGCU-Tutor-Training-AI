@@ -57,6 +57,7 @@ class Backend:
 
     def check_username(self, username):
         user_data = self.user_id_collection.find_one({"username": username})
+
         if user_data:
             self.global_user_id = user_data["user_id"]
             return self.global_user_id
