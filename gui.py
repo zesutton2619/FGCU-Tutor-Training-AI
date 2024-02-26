@@ -4,10 +4,10 @@ from backend import Backend
 from PIL import Image, ImageTk
 
 
-class LoginFrame:
-    def __init__(self, parent, on_login):
+class StartFrame:
+    def __init__(self, parent, on_start):
         self.parent = parent
-        self.on_login = on_login
+        self.on_start = on_start
 
         # Load the background image
         background_image = Image.open('images/login background.png')  # Open the image file
@@ -16,7 +16,7 @@ class LoginFrame:
         # Convert the resized image to PhotoImage format
         self.background_image = ImageTk.PhotoImage(resized_image)
 
-        # Create frame to hold background image and login components
+        # Create frame to hold background image and Start components
         self.frame = tb.Frame(parent)
         self.frame.pack(fill=tb.BOTH, expand=True)
 
@@ -24,27 +24,68 @@ class LoginFrame:
         self.background_label = tb.Label(self.frame, image=self.background_image)
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-        # Create a label for the "Login" text with no background
-        login_label = tb.Label(self.frame, text='Login', font=('Arial', 18), background='#cdcfcd', foreground='black')
-        login_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
+        # Create a label for the name of the program text with the same background color
+        start_label = tb.Label(self.frame, text='Name of Program', font=('Arial', 18), background='#cdcfcd',
+                               foreground='black')
+        start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
 
         # Create the entry box
         self.entry = tb.Entry(self.frame, width=30, font=('Arial', 14))
-        self.entry.bind("<Return>", lambda event: self.login())
+        self.entry.bind("<Return>", lambda event: self.start())
         self.entry.place(relx=0.5, rely=0.5, anchor=tb.CENTER)
 
-        # Create the login button
-        self.login_button = tb.Button(self.frame, text="Login", command=self.login, width=10)
-        self.login_button.place(relx=0.5, rely=0.55, anchor=tb.CENTER)
+        # Create menu for selecting subjects
+        style = tb.Style()
+        style.configure('TMenubutton', font=('Arial', 14), width=15)
+        self.selected_subject = "Select a subject"
+        self.subject_menu = tb.Menubutton(self.frame, text=f'{self.selected_subject}', direction="below",
+                                          style='primary')
+        self.subject_menu.menu = tb.Menu(self.subject_menu, tearoff=False)
+        self.subject_menu.configure(menu=self.subject_menu.menu)
+        self.subject_menu.menu.config(font=('Arial', 14))
 
-    def login(self):
+        subjects = ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]
+        for subject in subjects:
+            self.subject_menu.menu.add_command(label=subject, command=lambda s=subject: self.set_subject(s))
+
+        self.subject_menu.place(relx=0.458, rely=0.55, anchor=tb.CENTER)
+
+        # Create menu for selecting mode
+        self.selected_mode = 'Select mode'
+        self.mode_menu = tb.Menubutton(self.frame, text=f'{self.selected_mode}', direction="below", style='info')
+        self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
+        self.mode_menu.configure(menu=self.mode_menu.menu)
+        self.mode_menu.menu.configure(font=('Arial', 14))
+        modes = ['Tutor', 'Tutee', 'Generate Conversation']
+        for mode in modes:
+            self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.set_mode(m))
+        self.mode_menu.place(relx=00.458, rely=0.6, anchor=tb.CENTER)
+
+        # Create the Start button
+        style.configure('TButton', font=('Arial', 14))
+        self.start_button = tb.Button(self.frame, text="Start", command=self.start, width=10, style='success')
+        self.start_button.place(relx=0.5, rely=0.65, anchor=tb.CENTER)
+
+    def start(self):
         first_name = self.entry.get()
         if first_name == '':
-            login_label = tb.Label(self.frame, text='Please enter your First Name', font=('Arial', 18),
-                                   background='#cdcfcd', foreground='black')
-            login_label.place(relx=0.5, rely=0.60, anchor=tb.CENTER)
+            messagebox.showerror("Error", "Please enter your first name")
             return
-        self.on_login(first_name)
+        if self.selected_mode not in ['Tutor', 'Tutee', 'Generate Conversation']:
+            messagebox.showerror("Error", "Please select mode")
+            return
+        if self.selected_subject not in ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]:
+            messagebox.showerror("Error", "Please select subject")
+            return
+        self.on_start(first_name, self.selected_subject, self.selected_mode)
+
+    def set_subject(self, subject):
+        self.selected_subject = subject
+        self.subject_menu.config(text=subject)
+
+    def set_mode(self, mode):
+        self.selected_mode = mode
+        self.mode_menu.config(text=mode)
 
 
 class GUI:
@@ -63,6 +104,8 @@ class GUI:
         self.add_message_entry = None
         self.message = None
         self.first_name = None
+        self.subject = None
+        self.mode = None
         self.root = root
         self.backend = Backend()
         self.previous_conversation_loaded = False
@@ -72,23 +115,24 @@ class GUI:
         self.root.state('zoomed')
 
         self.main_frame = tb.Frame(self.root)
-        self.login_frame = None
+        self.start_frame = None
 
-        self.show_login_frame()
+        self.show_start_frame()
 
-    def show_login_frame(self):
+    def show_start_frame(self):
         if self.main_frame:
             self.main_frame.pack_forget()  # Hide the main frame if it exists
-        self.login_frame = LoginFrame(self.root, self.on_login)
+        self.start_frame = StartFrame(self.root, self.on_start)
 
-    def on_login(self, first_name):
+    def on_start(self, first_name, subject, mode):
         self.first_name = first_name
+        self.subject = subject
+        self.mode = mode
+        print(first_name, subject, mode)
         self.backend.check_username(first_name)
         self.backend.create_conversation_name()  # initialize conversation name
-        # self.message = 'Start'
-        # self.add_message()
-        if self.login_frame:
-            self.login_frame.frame.pack_forget()  # Hide the login frame
+        if self.start_frame:
+            self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
 
     def show_main_frame(self):
@@ -298,7 +342,7 @@ class GUI:
 
     def logout(self):
         self.clear_conversation()
-        self.show_login_frame()
+        self.show_start_frame()
 
 
 def start_gui():
