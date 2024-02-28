@@ -153,7 +153,7 @@ class GUI:
         self.info_label = tb.Label(self.main_frame,
                                    text=f'Name: {self.first_name}, Subject: {self.subject}, 'f'Mode: {self.mode}',
                                    font=('Helvetica', 12))
-        self.info_label.pack(side=tb.TOP, fill=tb.X, pady=5)
+        self.info_label.pack(side=tb.TOP, fill=tb.X, pady=5, padx=5)
 
         # Create conversation display area
         self.conversation_frame = tb.Frame(self.main_frame, padding=(10, 10, 0, 10))
@@ -175,7 +175,7 @@ class GUI:
         self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
 
         # Add the entry box
-        self.add_message_entry = tb.Text(self.input_frame, height=3, width=50, font=('Helvetica', 12))
+        self.add_message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
         self.add_message_entry.bind("<Return>", lambda event: self.add_message())
         self.add_message_entry.pack(side=tb.LEFT, padx=(0, 5))
 
@@ -195,7 +195,7 @@ class GUI:
         # Add start conversation button
         self.start_conversation_button = tb.Button(self.input_frame, text="Start Conversation",
                                                    command=self.start_conversation, style='success')
-        self.start_conversation_button.pack(side=tb.RIGHT, padx=10)
+        self.start_conversation_button.pack(side=tb.RIGHT, padx=5)
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
@@ -239,8 +239,8 @@ class GUI:
             self.clear_conversation()
             self.previous_conversation_loaded = False
 
-        self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-        message = self.add_message_entry.get("1.0", tb.END).strip()
+        self.conversation_text.config(state='normal')  # Set state to normal to allow editing
+        message = self.add_message_entry.get("1.0", tb.END).strip()  # Strip newline character
         if self.message == 'Start':
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
@@ -251,7 +251,6 @@ class GUI:
             messagebox.showwarning('Error', 'Enter a message')
             return
         else:
-            message = self.add_message_entry.get("1.0", tb.END).strip()
             self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
@@ -265,6 +264,8 @@ class GUI:
 
         # Scroll to the bottom of the conversation text widget
         self.conversation_text.see(tb.END)
+
+        return 'break'  # move cursor back to first line
 
     def save_conversation(self):
         self.started_conversation = False

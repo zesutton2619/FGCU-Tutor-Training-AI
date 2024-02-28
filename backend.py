@@ -38,27 +38,21 @@ class Backend:
         return self.global_user_id
 
     def create_conversation_name(self):
-        # Check if there are existing conversations for the current user
-        existing_conversations = self.conversations_collection.count_documents({'user_id': self.global_user_id})
+        # Find the maximum conversation number among existing conversations for the current user
+        max_conversation_number = 0
+        existing_conversations = self.conversations_collection.find({'user_id': self.global_user_id})
+        for conversation in existing_conversations:
+            conversation_name = conversation.get("conversation_name")
+            if conversation_name and conversation_name.startswith(
+                    f"{self.global_subject} {self.global_mode} Conversation "):
+                conversation_number = int(conversation_name.split(" ")[-1])
+                max_conversation_number = max(max_conversation_number, conversation_number)
 
-        if existing_conversations == 0:
-            # If no conversations exist, start with "Conversation 1"
-            self.global_conversation_name = f"{self.global_subject} {self.global_mode} Conversation 1"
-        else:
-            # Find the maximum conversation number among existing conversations
-            max_conversation_number = 0
-            for conversation in self.conversations_collection.find({'user_id': self.global_user_id}):
-                conversation_name = conversation["conversation_name"]
-                # Extract the numeric part from the conversation name if it follows the expected format
-                if conversation_name.startswith("Conversation "):
-                    conversation_number = int(conversation_name.split(" ")[-1])
-                    max_conversation_number = max(max_conversation_number, conversation_number)
-
-            # Increment the maximum conversation number to generate the next conversation name
-            new_conversation_number = max_conversation_number + 1
-            self.global_conversation_name = (f"{self.global_subject} {self.global_mode} "
-                                             f"Conversation {new_conversation_number}")
-
+        # Increment the maximum conversation number to generate the next conversation name
+        new_conversation_number = max_conversation_number + 1
+        self.global_conversation_name = (f"{self.global_subject} {self.global_mode} "
+                                         f"Conversation {new_conversation_number}")
+        print(self.global_conversation_name)
         return self.global_conversation_name
 
     def get_user_id(self):
