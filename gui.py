@@ -25,24 +25,29 @@ class StartFrame:
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Create a label for the name of the program text with the same background color
-        start_label = tb.Label(self.frame, text='Name of Program', font=('Arial', 18), background='#cdcfcd',
-                               foreground='black')
-        start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
+        self.start_label = tb.Label(self.frame, text='Name of Program', font=('Helvetica', 18), background='#cdcfcd',
+                                    foreground='black')
+        self.start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
+
+        # Create label for Name
+        self.entry_label = tb.Label(self.frame, text='Name:', font=('Helvetica', 18), background='#cbcbcb',
+                                    foreground='black')
+        self.entry_label.place(relx=0.36, rely=0.5, anchor=tb.CENTER)
 
         # Create the entry box
-        self.entry = tb.Entry(self.frame, width=30, font=('Arial', 14))
+        self.entry = tb.Entry(self.frame, width=30, font=('Helvetica', 14))
         self.entry.bind("<Return>", lambda event: self.start())
         self.entry.place(relx=0.5, rely=0.5, anchor=tb.CENTER)
 
         # Create menu for selecting subjects
         style = tb.Style()
-        style.configure('TMenubutton', font=('Arial', 14), width=15)
+        style.configure('TMenubutton', font=('Helvetica', 14), width=15)
         self.selected_subject = "Select a subject"
         self.subject_menu = tb.Menubutton(self.frame, text=f'{self.selected_subject}', direction="below",
                                           style='primary')
         self.subject_menu.menu = tb.Menu(self.subject_menu, tearoff=False)
         self.subject_menu.configure(menu=self.subject_menu.menu)
-        self.subject_menu.menu.config(font=('Arial', 14))
+        self.subject_menu.menu.config(font=('Helvetica', 14))
 
         subjects = ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]
         for subject in subjects:
@@ -50,19 +55,22 @@ class StartFrame:
 
         self.subject_menu.place(relx=0.458, rely=0.55, anchor=tb.CENTER)
 
-        # Create menu for selecting mode
-        self.selected_mode = 'Select mode'
+        # # Create menu for selecting mode
+        # self.subject_label = tb.Label(self.frame, text='Select the mode for the AI', font=('Helvetica', 14),
+        #                               background='#cdcfcd', foreground='black')
+        # self.subject_label.place(relx=0.46, rely=0.6, anchor=tb.CENTER)
+        self.selected_mode = 'Select AI mode'
         self.mode_menu = tb.Menubutton(self.frame, text=f'{self.selected_mode}', direction="below", style='info')
         self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
         self.mode_menu.configure(menu=self.mode_menu.menu)
-        self.mode_menu.menu.configure(font=('Arial', 14))
+        self.mode_menu.menu.configure(font=('Helvetica', 14))
         modes = ['Tutor', 'Tutee', 'Generate Conversation']
         for mode in modes:
             self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.set_mode(m))
         self.mode_menu.place(relx=00.458, rely=0.6, anchor=tb.CENTER)
 
         # Create the Start button
-        style.configure('TButton', font=('Arial', 14))
+        style.configure('TButton', font=('Helvetica', 14))
         self.start_button = tb.Button(self.frame, text="Start", command=self.start, width=10, style='success')
         self.start_button.place(relx=0.5, rely=0.65, anchor=tb.CENTER)
 
@@ -96,10 +104,11 @@ class GUI:
         self.tree = None
         self.scrollbar = None
         self.add_message_button = None
-        self.logout_button = None
+        self.exit_button = None
         self.save_button = None
         self.delete_button = None
         self.start_conversation_button = None
+        self.info_label = None
         self.conversation_text = None
         self.add_message_entry = None
         self.message = None
@@ -128,6 +137,8 @@ class GUI:
         self.first_name = first_name
         self.subject = subject
         self.mode = mode
+        self.backend.set_subject(subject)
+        self.backend.set_mode(mode)
         print(first_name, subject, mode)
         self.backend.check_username(first_name)
         self.backend.create_conversation_name()  # initialize conversation name
@@ -139,17 +150,23 @@ class GUI:
         self.main_frame = tb.Frame(self.root)
         self.main_frame.pack(expand=True, fill=tb.BOTH)
 
+        self.info_label = tb.Label(self.main_frame,
+                                   text=f'Name: {self.first_name}, Subject: {self.subject}, 'f'Mode: {self.mode}',
+                                   font=('Helvetica', 12))
+        self.info_label.pack(side=tb.TOP, fill=tb.X, pady=5)
+
         # Create conversation display area
         self.conversation_frame = tb.Frame(self.main_frame, padding=(10, 10, 0, 10))
         self.conversation_frame.pack(expand=True, fill=tb.BOTH, side=tb.RIGHT)
 
         # Create conversation display area
-        self.conversation_text = tb.Text(self.conversation_frame, wrap=tb.WORD, state='disabled', height=20, width=100)
-        self.conversation_text.pack(expand=True, fill=tb.BOTH, padx=10, pady=10)
+        self.conversation_text = tb.Text(self.conversation_frame, wrap=tb.WORD, state='disabled', height=20, width=100,
+                                         font=('Helvetica', 12))
+        self.conversation_text.pack(expand=True, fill=tb.BOTH, padx=10, pady=5)
 
         # Add a scrollbar to the conversation text widget
         self.scrollbar = tb.Scrollbar(self.conversation_text, orient=tb.VERTICAL,
-                                      command=self.conversation_text.yview, style='secondary-round')
+                                      command=self.conversation_text.yview, style='primary-round')
         self.scrollbar.pack(side=tb.RIGHT, fill=tb.Y)
         self.conversation_text.config(yscrollcommand=self.scrollbar.set)
 
@@ -158,7 +175,7 @@ class GUI:
         self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
 
         # Add the entry box
-        self.add_message_entry = tb.Entry(self.input_frame, width=70)
+        self.add_message_entry = tb.Text(self.input_frame, height=3, width=50, font=('Helvetica', 12))
         self.add_message_entry.bind("<Return>", lambda event: self.add_message())
         self.add_message_entry.pack(side=tb.LEFT, padx=(0, 5))
 
@@ -184,13 +201,13 @@ class GUI:
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
         self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH)
 
-        self.logout_button = tb.Button(self.tree_frame, text="Logout", command=self.logout, style='danger')
-        self.logout_button.pack(side=tb.BOTTOM, pady=10, anchor='sw')
+        self.exit_button = tb.Button(self.tree_frame, text="Exit", command=self.exit, style='danger')
+        self.exit_button.pack(side=tb.BOTTOM, pady=10, anchor='sw')
 
         # Create the TreeView
         self.tree = tb.Treeview(self.tree_frame, columns=('conversation',), style='primary')
         self.tree.heading('#0', text='Previous Conversations', anchor='w')
-        self.tree.column('#0', stretch=True)
+        self.tree.column('#0', width=250)
         self.tree.pack(expand=True, fill=tb.BOTH)
 
         # Load previous conversations into the TreeView
@@ -202,6 +219,13 @@ class GUI:
     def start_conversation(self):
         if self.previous_conversation_loaded:
             self.clear_conversation()
+        else:
+            yesno = messagebox.askyesno("Start New Conversation",
+                                        "Are you sure you want to start a new conversation?")
+            if not yesno:
+                return
+            else:
+                self.clear_conversation()
 
         self.message = 'Start'
         self.started_conversation = True
@@ -216,28 +240,28 @@ class GUI:
             self.previous_conversation_loaded = False
 
         self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-        message = self.add_message_entry.get()
+        message = self.add_message_entry.get("1.0", tb.END).strip()
         if self.message == 'Start':
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
             response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
+            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
             self.message = ''
         elif message == '' and self.started_conversation:
             messagebox.showwarning('Error', 'Enter a message')
             return
         else:
-            message = self.add_message_entry.get()
-            self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n")
+            message = self.add_message_entry.get("1.0", tb.END).strip()
+            self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
             response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"Assistant: {response}\n")
+            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
 
         self.conversation_text.config(state='disabled')
 
         # Clear the entry box after adding the message
-        self.add_message_entry.delete(0, tb.END)
+        self.add_message_entry.delete(1.0, tb.END)
 
         # Scroll to the bottom of the conversation text widget
         self.conversation_text.see(tb.END)
@@ -298,8 +322,27 @@ class GUI:
         previous_conversations = self.backend.retrieve_previous_conversation_names(user_id)
 
         # Insert previous conversations into the TreeView
+        mode_conversations = {}
         for conversation in previous_conversations:
-            self.tree.insert('', 'end', text=conversation)
+            mode = conversation.get("mode", "Unknown Mode")  # Get mode if exists, otherwise default to "Unknown Mode"
+            conversation_name = conversation["conversation_name"]
+
+            # Create mode key if not exists
+            if mode not in mode_conversations:
+                mode_conversations[mode] = []
+
+            # Append conversation name to corresponding mode
+            mode_conversations[mode].append(conversation_name)
+
+        # Insert mode folders and conversations into the TreeView
+        for mode, conversations in mode_conversations.items():
+            mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
+            for conversation in conversations:
+                self.tree.insert(mode_item, 'end', text=conversation)
+
+        self.tree.tag_configure('big_font', font=('Helvetica', 10))
+        for item in self.tree.get_children():
+            self.tree.item(item, tags=('big_font',))
 
     def load_selected_conversation(self, event):
         self.previous_conversation_loaded = True
@@ -340,7 +383,7 @@ class GUI:
         self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
         self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
-    def logout(self):
+    def exit(self):
         self.clear_conversation()
         self.show_start_frame()
 

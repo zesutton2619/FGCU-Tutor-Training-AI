@@ -21,6 +21,17 @@ class Backend:
         self.user_id_collection = self.db["User ID"]  # User ID collection inside Test database
         self.global_conversation_name = ''
         self.global_user_id = 0
+        self.global_subject = ''
+        self.global_mode = ''
+        self.tutee_assistant_ids = {
+            'Writing': 'asst_xqPTYqajw69DTFS2yidhYVBJ',
+            'Chemistry': 'asst_M2fmEombFqQpmZHUmUBgkfVJ',
+            'Biology': 'asst_A3KVHx9Rp7oM8l585JUAEbIU',
+            'Physics': 'asst_2cDZXQUhhR9nvH93rx5dhTG8',
+            'Nursing': 'asst_SCNZeLiWbJ1XmkLM9GTINtPV',
+            'Math': 'asst_cPu94bL3l0kzcPaExKM270Cx',
+            'Business': 'asst_ySOkMWNC06ql3weCpYQN1Pdi'
+        }
 
     def generate_user_id(self):
         self.global_user_id = random.randint(100, 999)
@@ -32,7 +43,7 @@ class Backend:
 
         if existing_conversations == 0:
             # If no conversations exist, start with "Conversation 1"
-            self.global_conversation_name = "Conversation 1"
+            self.global_conversation_name = f"{self.global_subject} {self.global_mode} Conversation 1"
         else:
             # Find the maximum conversation number among existing conversations
             max_conversation_number = 0
@@ -45,7 +56,8 @@ class Backend:
 
             # Increment the maximum conversation number to generate the next conversation name
             new_conversation_number = max_conversation_number + 1
-            self.global_conversation_name = f"Conversation {new_conversation_number}"
+            self.global_conversation_name = (f"{self.global_subject} {self.global_mode} "
+                                             f"Conversation {new_conversation_number}")
 
         return self.global_conversation_name
 
@@ -69,6 +81,12 @@ class Backend:
                     "username": username
                 }
             )
+
+    def set_subject(self, subject_name):
+        self.global_subject = subject_name
+
+    def set_mode(self, mode):
+        self.global_mode = mode
 
     # --------------------------------------------------------------
     # Thread management
@@ -110,7 +128,14 @@ class Backend:
     # --------------------------------------------------------------
 
     def run_assistant(self, thread, user_id, name, conversation_name):
-        assistant = self.client.beta.assistants.retrieve("asst_cPu94bL3l0kzcPaExKM270Cx")
+        if self.global_mode == 'Tutee':
+            assistant_id = self.tutee_assistant_ids[self.global_subject]
+        elif self.global_mode == 'Tutor':
+            assistant_id = 'asst_8beVxeg82dDaJ1jUaP8tDy4n'
+        else:
+            assistant_id = 'asst_8beVxeg82dDaJ1jUaP8tDy4n'
+        print("Mode:", self.global_mode, "Assistant:", assistant_id)
+        assistant = self.client.beta.assistants.retrieve(f"{assistant_id}")
 
         run = self.client.beta.threads.runs.create(
             thread_id=thread.id,
@@ -152,6 +177,8 @@ class Backend:
             "thread_id": thread_id,
             "user_id": user_id,
             "username": name,
+            "subject": self.global_subject,
+            "mode": self.global_mode,
             "conversation_name": conversation_name,
             "user_messages": user_messages,
             "assistant_messages": assistant_messages
@@ -168,12 +195,8 @@ class Backend:
     # --------------------------------------------------------------
 
     def retrieve_previous_conversation_names(self, user_id):
-        conversation_names = []
         conversations = self.conversations_collection.find({"user_id": user_id})
-        for conversation in conversations:
-            conversation = conversation['conversation_name']
-            conversation_names.append(conversation)
-        return conversation_names
+        return list(conversations)
 
     # --------------------------------------------------------------
     # Retrieve previous conversation
@@ -201,17 +224,18 @@ class Backend:
 
         user_messages = conversation.get("user_messages", [])
         assistant_messages = conversation.get("assistant_messages", [])
-        user_name = conversation.get('username', 'User')
+        username = conversation.get('username', 'User')
+        subject = conversation.get('subject', 'Subject')
         combined_messages = sorted(user_messages + assistant_messages, key=lambda x: x['timestamp'])
 
         for message in combined_messages:
-            role = user_name if message in user_messages else "Assistant"
+            role = username if message in user_messages else f'{subject} Tutee'
             content = message["content"]
             timestamp = message["timestamp"]
 
             timestamp_str = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-            formatted_conversation += f"({timestamp_str}) {role}: {content}\n"
+            formatted_conversation += f"({timestamp_str}) {role}: {content}\n\n"
         # print(formatted_conversation)
         return formatted_conversation
 
