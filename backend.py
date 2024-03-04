@@ -32,6 +32,15 @@ class Backend:
             'Math': 'asst_cPu94bL3l0kzcPaExKM270Cx',
             'Business': 'asst_ySOkMWNC06ql3weCpYQN1Pdi'
         }
+        self.generate_conversation_assistant_ids = {
+            'Writing': 'asst_WqDmAHC9pa4UV38zYlTPo69x',
+            'Chemistry': 'asst_IJwae2Gyx5lIfAHqyok1YseB',
+            'Biology': 'asst_rrg0vXS9kakM0ahggvSd4l0z',
+            'Physics': 'asst_cXq2JK7cFj6CEixHb9AYiyPV',
+            'Nursing': 'asst_4A9ckkItbVIkUV9lECsEUScH',
+            'Math': 'asst_VfXLcUHfYqn83qddaLHk0bPx',
+            'Business': 'asst_rzDLQwfj6ZZIIB5u0RsuwDIO'
+        }
 
     def generate_user_id(self):
         self.global_user_id = random.randint(100, 999)
@@ -124,6 +133,8 @@ class Backend:
     def run_assistant(self, thread, user_id, name, conversation_name):
         if self.global_mode == 'Tutee':
             assistant_id = self.tutee_assistant_ids[self.global_subject]
+        elif self.global_mode == 'Generate Conversation':
+            assistant_id = self.generate_conversation_assistant_ids[self.global_subject]
         elif self.global_mode == 'Tutor':
             assistant_id = 'asst_8beVxeg82dDaJ1jUaP8tDy4n'
         else:
