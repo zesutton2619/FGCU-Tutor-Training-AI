@@ -95,7 +95,6 @@ class StartFrame:
         self.selected_mode = mode
         self.mode_menu.config(text=mode)
 
-
 class GUI:
     def __init__(self, root):
         self.conversation_frame = None
@@ -241,21 +240,33 @@ class GUI:
 
         self.conversation_text.config(state='normal')  # Set state to normal to allow editing
         message = self.add_message_entry.get("1.0", tb.END).strip()  # Strip newline character
+
+        if self.mode == 'Generate Conversation':
+            # Disable the entry box entirely if the mode is "Generate Conversation"
+            self.add_message_entry.config(state='disabled')
+
+        else:
+            # Enable the entry box for other modes
+            self.add_message_entry.config(state='normal')
+
         if self.message == 'Start':
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
             response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
             self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
             self.message = ''
-        elif message == '' and self.started_conversation:
-            messagebox.showwarning('Error', 'Enter a message')
-            return
-        else:
-            self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
-            conversation_name = self.backend.get_conversation_name()
-            user_id = self.backend.get_user_id()
-            response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
+        elif self.add_message_button.winfo_ismapped():
+            if self.mode == 'Generate Conversation':
+                messagebox.showwarning('Error', 'User entry is disabled in generate conversation mode')
+            elif message == '' and self.started_conversation:
+                messagebox.showwarning('Error', 'Enter a message')
+                return
+            else:
+                self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
+                conversation_name = self.backend.get_conversation_name()
+                user_id = self.backend.get_user_id()
+                response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
+                self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
 
         self.conversation_text.config(state='disabled')
 
