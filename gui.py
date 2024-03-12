@@ -110,7 +110,9 @@ class GUI:
         self.start_conversation_button = None
         self.info_label = None
         self.conversation_text = None
-        self.add_message_entry = None
+        self.start_conversation_button_text = None
+        self.add_message_button_text = None
+        self.message_entry = None
         self.message = None
         self.first_name = None
         self.subject = None
@@ -174,13 +176,19 @@ class GUI:
         self.input_frame = tb.Frame(self.conversation_frame)
         self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
 
-        # Add the entry box
-        self.add_message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
-        self.add_message_entry.bind("<Return>", lambda event: self.add_message())
-        self.add_message_entry.pack(side=tb.LEFT, padx=(0, 5))
+        if self.mode != 'Generate Conversation':
+            # Add the entry box
+            self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
+            self.message_entry.bind("<Return>", lambda event: self.add_message())
+            self.message_entry.pack(side=tb.LEFT, padx=(0, 5))
 
         # Add the enter button
-        self.add_message_button = tb.Button(self.input_frame, text="Enter", command=self.add_message, style='success')
+        if self.mode == 'Generate Conversation':
+            self.add_message_button_text = 'Generate New Messages'
+        else:
+            self.add_message_button_text = 'Enter'
+        self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
+                                            command=self.add_message, style='success')
         self.add_message_button.pack(side=tb.LEFT)
 
         # Add the save button
@@ -193,7 +201,11 @@ class GUI:
         self.delete_button.pack(side=tb.RIGHT, padx=10)
 
         # Add start conversation button
-        self.start_conversation_button = tb.Button(self.input_frame, text="Start Conversation",
+        if self.mode == 'Generate Conversation':
+            self.start_conversation_button_text = 'Generate Conversation'
+        else:
+            self.start_conversation_button_text = 'Start Conversation'
+        self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
                                                    command=self.start_conversation, style='success')
         self.start_conversation_button.pack(side=tb.RIGHT, padx=5)
 
@@ -233,34 +245,43 @@ class GUI:
 
     def add_message(self):
         if not self.started_conversation and self.previous_conversation_loaded:
-            messagebox.showwarning('Error', 'You must start a conversation first')
+            if self.mode == 'Generate Conversation':
+                messagebox.showwarning('Error', 'You must generate a conversation first')
+            else:
+                messagebox.showwarning('Error', 'You must start a conversation first')
             return
         elif self.previous_conversation_loaded:
             self.clear_conversation()
             self.previous_conversation_loaded = False
 
-        self.conversation_text.config(state='normal')  # Set state to normal to allow editing
-        message = self.add_message_entry.get("1.0", tb.END).strip()  # Strip newline character
-        if self.message == 'Start':
-            conversation_name = self.backend.get_conversation_name()
-            user_id = self.backend.get_user_id()
-            response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
-            self.message = ''
-        elif message == '' and self.started_conversation:
-            messagebox.showwarning('Error', 'Enter a message')
-            return
+        self.conversation_text.config(state='normal')  # Set state too normal to allow editing
+        conversation_name = self.backend.get_conversation_name()
+        user_id = self.backend.get_user_id()
+
+        if self.mode == 'Generate Conversation':
+            response = self.backend.generate_response('Continue Conversation', user_id,
+                                                      self.first_name, conversation_name)
+            self.conversation_text.insert(tb.END, f"{response}\n\n")
+
         else:
-            self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
-            conversation_name = self.backend.get_conversation_name()
-            user_id = self.backend.get_user_id()
-            response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
+
+            message = self.message_entry.get("1.0", tb.END).strip()  # Strip newline character
+            if self.message == 'Start':
+                response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
+                self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
+                self.message = ''
+            elif message == '' and self.started_conversation:
+                messagebox.showwarning('Error', 'Enter a message')
+                return
+            else:
+                self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
+                response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
+                self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
+
+            # Clear the entry box after adding the message
+            self.message_entry.delete(1.0, tb.END)
 
         self.conversation_text.config(state='disabled')
-
-        # Clear the entry box after adding the message
-        self.add_message_entry.delete(1.0, tb.END)
 
         # Scroll to the bottom of the conversation text widget
         self.conversation_text.see(tb.END)
@@ -324,7 +345,10 @@ class GUI:
 
         # Insert mode folders and conversations into the TreeView
         for mode, conversations in conversations_by_mode.items():
-            mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
+            if mode == 'Generate Conversation':
+                mode_item = self.tree.insert('', 'end', text="Generated Conversations")
+            else:
+                mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
             for conversation in conversations:
                 self.tree.insert(mode_item, 'end', text=conversation)
 
