@@ -1,6 +1,7 @@
+import sqlite3
+import json
 from openai import OpenAI
 from dotenv import load_dotenv
-from pymongo import MongoClient
 import time
 import os
 import datetime
@@ -13,12 +14,7 @@ class Backend:
     def __init__(self):
         OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
         self.client = OpenAI(api_key=OPENAI_API_KEY)
-
-        MONGO_URI = os.getenv("MONGO_URI")
-        self.client_mongo = MongoClient(MONGO_URI)
-        self.db = self.client_mongo["Test"]  # Replace with your actual database name
-        self.conversations_collection = self.db["Conversations"]  # Conversations collection inside Test database
-        self.user_id_collection = self.db["User ID"]  # User ID collection inside Test database
+        self.db_path = os.getenv("SQLITE_DB_PATH")  # Path to SQLite database file
         self.global_conversation_name = ''
         self.global_user_id = 0
         self.global_subject = ''
@@ -32,6 +28,29 @@ class Backend:
             'Math': 'asst_cPu94bL3l0kzcPaExKM270Cx',
             'Business': 'asst_ySOkMWNC06ql3weCpYQN1Pdi'
         }
+        self.initialize_database()
+
+    def initialize_database(self):
+        # Create database tables if they don't exist
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS Conversations (
+                        _id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        thread_id TEXT,
+                        user_id INTEGER,
+                        username TEXT,
+                        subject TEXT,
+                        mode TEXT,
+                        conversation_name TEXT,
+                        user_messages TEXT,
+                        assistant_messages TEXT
+                     )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS User_ID (
+                            user_id INTEGER PRIMARY KEY,
+                            username TEXT
+                         )''')
+        conn.commit()
+        conn.close()
 
     def generate_user_id(self):
         self.global_user_id = random.randint(100, 999)
@@ -40,9 +59,12 @@ class Backend:
     def create_conversation_name(self):
         # Find the maximum conversation number among existing conversations for the current user
         max_conversation_number = 0
-        existing_conversations = self.conversations_collection.find({'user_id': self.global_user_id})
-        for conversation in existing_conversations:
-            conversation_name = conversation.get("conversation_name")
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT conversation_name FROM Conversations WHERE user_id = ?''', (self.global_user_id,))
+        existing_conversations = c.fetchall()
+        for conversation_tuple in existing_conversations:
+            conversation_name = conversation_tuple[0]  # Extract conversation name from tuple
             if conversation_name and conversation_name.startswith(
                     f"{self.global_subject} {self.global_mode} Conversation "):
                 conversation_number = int(conversation_name.split(" ")[-1])
@@ -62,19 +84,19 @@ class Backend:
         return self.global_conversation_name
 
     def check_username(self, username):
-        user_data = self.user_id_collection.find_one({"username": username})
-
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT user_id FROM User_ID WHERE username = ?''', (username,))
+        user_data = c.fetchone()
         if user_data:
-            self.global_user_id = user_data["user_id"]
+            self.global_user_id = user_data[0]
             return self.global_user_id
         else:
             self.global_user_id = self.generate_user_id()
-            self.user_id_collection.insert_one(
-                {
-                    "user_id": self.global_user_id,
-                    "username": username
-                }
-            )
+            c.execute('''INSERT INTO User_ID (user_id, username) VALUES (?, ?)''', (self.global_user_id, username))
+            conn.commit()
+            conn.close()
+            return self.global_user_id
 
     def set_subject(self, subject_name):
         self.global_subject = subject_name
@@ -82,18 +104,14 @@ class Backend:
     def set_mode(self, mode):
         self.global_mode = mode
 
-    # --------------------------------------------------------------
-    # Thread management
-    # --------------------------------------------------------------
-
     def check_if_thread_exists(self, user_id, conversation_name):
-        # filter by user_id and conversation name and look for thread id
-        thread = self.conversations_collection.find_one({"user_id": user_id, "conversation_name": conversation_name})
-        return thread["thread_id"] if thread else None
-
-    # --------------------------------------------------------------
-    # Generate response
-    # --------------------------------------------------------------
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT thread_id FROM Conversations 
+                     WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
+        thread = c.fetchone()
+        conn.close()
+        return thread[0] if thread else None
 
     def generate_response(self, message_body, user_id, name, conversation_name):
         thread_id = self.check_if_thread_exists(user_id, conversation_name)
@@ -117,10 +135,6 @@ class Backend:
         print(f"To {name}:", new_message)
         return new_message
 
-    # --------------------------------------------------------------
-    # Run assistant
-    # --------------------------------------------------------------
-
     def run_assistant(self, thread, user_id, name, conversation_name):
         if self.global_mode == 'Tutee':
             assistant_id = self.tutee_assistant_ids[self.global_subject]
@@ -142,19 +156,13 @@ class Backend:
 
         messages = self.client.beta.threads.messages.list(thread_id=thread.id)
         new_message = messages.data[0].content[0].text.value
-        self.store_conversation(messages, user_id, name, conversation_name)
+        self.store_conversation(thread, messages, user_id, name, conversation_name)
         return new_message
 
-    # --------------------------------------------------------------
-    # Function to store conversation in the database
-    # --------------------------------------------------------------
-
-    def store_conversation(self, conversation, user_id, name, conversation_name):
-        thread_id = conversation.data[0].thread_id
-
+    def store_conversation(self, thread, conversation, user_id, name, conversation_name):
+        thread_id = thread.id
         user_messages = []
         assistant_messages = []
-
         for message in conversation.data:
             if message.role == "user":
                 user_messages.append({
@@ -167,47 +175,91 @@ class Backend:
                     "timestamp": message.created_at
                 })
 
-        conversation_data = {
-            "thread_id": thread_id,
-            "user_id": user_id,
-            "username": name,
-            "subject": self.global_subject,
-            "mode": self.global_mode,
-            "conversation_name": conversation_name,
-            "user_messages": user_messages,
-            "assistant_messages": assistant_messages
-        }
+        # Convert user_messages and assistant_messages to JSON strings
+        user_messages_json = json.dumps(user_messages)
+        assistant_messages_json = json.dumps(assistant_messages)
 
-        self.conversations_collection.replace_one(
-            {"thread_id": thread_id},
-            conversation_data,
-            upsert=True
-        )
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
 
-    # --------------------------------------------------------------
-    # Retrieve previous conversation names
-    # --------------------------------------------------------------
+        # Check if a conversation with the same thread_id exists
+        c.execute('''SELECT * FROM Conversations WHERE thread_id = ?''', (thread_id,))
+        existing_conversation = c.fetchone()
 
-    def retrieve_previous_conversation_names(self, user_id):
-        conversations = self.conversations_collection.find({"user_id": user_id})
-        return list(conversations)
+        if existing_conversation:
+            # Update the existing row
+            c.execute('''UPDATE Conversations 
+                         SET user_messages = ?, assistant_messages = ?
+                         WHERE thread_id = ?''',
+                      (user_messages_json, assistant_messages_json, thread_id))
+        else:
+            # Insert a new row
+            c.execute('''INSERT INTO Conversations 
+                         (thread_id, user_id, username, subject, mode, conversation_name, user_messages, assistant_messages)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                      (thread_id, user_id, name, self.global_subject, self.global_mode, conversation_name,
+                       user_messages_json, assistant_messages_json))
 
-    # --------------------------------------------------------------
-    # Retrieve previous conversation
-    # --------------------------------------------------------------
+        conn.commit()
+        conn.close()
+
+    def retrieve_conversations_by_mode(self, user_id):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT mode, conversation_name FROM Conversations WHERE user_id = ?''', (user_id,))
+        conversations = c.fetchall()
+        conn.close()
+
+        conversations_by_mode = {}
+        for mode, conversation_name in conversations:
+            if mode not in conversations_by_mode:
+                conversations_by_mode[mode] = []
+            conversations_by_mode[mode].append(conversation_name)
+
+        return conversations_by_mode
 
     def retrieve_previous_conversation(self, user_id, conversation_name):
-        conversation = self.conversations_collection.find_one({"user_id": user_id,
-                                                               "conversation_name": conversation_name})
-        if conversation:
-            print("found conversation")
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT * FROM Conversations 
+                     WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
+        conversation_data = c.fetchone()
+        conn.close()
+        if conversation_data:
+            conversation = {
+                "thread_id": conversation_data[1],  # Assuming thread_id is at index 1
+                "user_id": conversation_data[2],  # Assuming user_id is at index 2
+                "username": conversation_data[3],  # Assuming username is at index 3
+                "subject": conversation_data[4],  # Assuming subject is at index 4
+                "mode": conversation_data[5],  # Assuming mode is at index 5
+                "conversation_name": conversation_data[6],  # Assuming conversation_name is at index 6
+                "user_messages": [],
+                "assistant_messages": []
+            }
+            # Retrieve user and assistant messages
+            user_messages_json = conversation_data[7]  # Assuming user_messages is at index 7
+            assistant_messages_json = conversation_data[8]  # Assuming assistant_messages is at index 8
+
+            user_messages = json.loads(user_messages_json)
+            assistant_messages = json.loads(assistant_messages_json)
+
+            for message_data in user_messages:
+                message = {
+                    "content": message_data["content"],
+                    "timestamp": message_data["timestamp"]
+                }
+                conversation["user_messages"].append(message)
+
+            for message_data in assistant_messages:
+                message = {
+                    "content": message_data["content"],
+                    "timestamp": message_data["timestamp"]
+                }
+                conversation["assistant_messages"].append(message)
+
             return conversation
         else:
             return None
-
-    # --------------------------------------------------------------
-    # Format conversation for display
-    # --------------------------------------------------------------
 
     @staticmethod
     def format_conversation(conversation):
@@ -230,15 +282,12 @@ class Backend:
             timestamp_str = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
             formatted_conversation += f"({timestamp_str}) {role}: {content}\n\n"
-        # print(formatted_conversation)
         return formatted_conversation
 
-    # --------------------------------------------------------------
-    # Remove conversation
-    # --------------------------------------------------------------
-
     def remove_conversation(self, conversation_name):
-        print("user id", self.global_user_id)
-        print("conversation name: ", conversation_name)
-        self.conversations_collection.find_one_and_delete({'user_id': self.global_user_id,
-                                                           'conversation_name': conversation_name})
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''DELETE FROM Conversations 
+                     WHERE user_id = ? AND conversation_name = ?''', (self.global_user_id, conversation_name))
+        conn.commit()
+        conn.close()

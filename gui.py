@@ -41,7 +41,7 @@ class StartFrame:
 
         # Create menu for selecting subjects
         style = tb.Style()
-        style.configure('TMenubutton', font=('Helvetica', 14), width=15)
+        style.configure('TMenubutton', font=('Helvetica', 14), width=20)
         self.selected_subject = "Select a subject"
         self.subject_menu = tb.Menubutton(self.frame, text=f'{self.selected_subject}', direction="below",
                                           style='primary')
@@ -245,7 +245,7 @@ class GUI:
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
             response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
+            self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
             self.message = ''
         elif message == '' and self.started_conversation:
             messagebox.showwarning('Error', 'Enter a message')
@@ -255,7 +255,7 @@ class GUI:
             conversation_name = self.backend.get_conversation_name()
             user_id = self.backend.get_user_id()
             response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
+            self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
 
         self.conversation_text.config(state='disabled')
 
@@ -318,25 +318,12 @@ class GUI:
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Retrieve previous conversations from the backend
+        # Retrieve previous conversations from the backend grouped by mode
         user_id = self.backend.get_user_id()
-        previous_conversations = self.backend.retrieve_previous_conversation_names(user_id)
-
-        # Insert previous conversations into the TreeView
-        mode_conversations = {}
-        for conversation in previous_conversations:
-            mode = conversation.get("mode", "Unknown Mode")  # Get mode if exists, otherwise default to "Unknown Mode"
-            conversation_name = conversation["conversation_name"]
-
-            # Create mode key if not exists
-            if mode not in mode_conversations:
-                mode_conversations[mode] = []
-
-            # Append conversation name to corresponding mode
-            mode_conversations[mode].append(conversation_name)
+        conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
 
         # Insert mode folders and conversations into the TreeView
-        for mode, conversations in mode_conversations.items():
+        for mode, conversations in conversations_by_mode.items():
             mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
             for conversation in conversations:
                 self.tree.insert(mode_item, 'end', text=conversation)
@@ -370,12 +357,6 @@ class GUI:
             self.conversation_text.config(state='normal')  # Set state too normal to allow editing
             self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
             self.conversation_text.insert(tb.END, formatted_conversation)  # Insert selected conversation
-            self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
-        else:
-            # If conversation is not found, display a message
-            self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-            self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
-            self.conversation_text.insert(tb.END, "Conversation not found.")  # Insert message
             self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
     def clear_conversation(self):
