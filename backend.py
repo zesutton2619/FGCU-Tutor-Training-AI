@@ -133,6 +133,24 @@ class Backend:
         """
         return self.global_user_id
 
+    def get_user_id_by_username(self, username):
+        """
+        Retrieves the user ID based on the provided username.
+
+        Args:
+            username (str): Username of the user.
+
+        Returns:
+            int: User ID associated with the username.
+        """
+        print("username:", username)
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT user_id FROM User_ID WHERE username = ?''', (username,))
+        user_id = c.fetchone()[0]  # Assuming username is unique and fetching the first result
+        conn.close()
+        return user_id
+
     def get_conversation_name(self):
         """
             Retrieves the global conversation name.
@@ -355,6 +373,33 @@ class Backend:
 
         return conversations_by_mode
 
+    def retrieve_conversations_by_username(self, username):
+        """
+        Retrieves conversations for users other than the specified username, grouped by username and mode.
+
+        Args:
+            username (str): Username of the user to exclude.
+
+        Returns:
+            dict: Dictionary of conversations grouped by username and mode.
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT username, mode, conversation_name FROM Conversations WHERE username != ?''',
+                  (username,))
+        conversations = c.fetchall()
+        conn.close()
+
+        conversations_by_username = {}
+        for username, mode, conversation_name in conversations:
+            if username not in conversations_by_username:
+                conversations_by_username[username] = {}
+            if mode not in conversations_by_username[username]:
+                conversations_by_username[username][mode] = []
+            conversations_by_username[username][mode].append(conversation_name)
+        print(conversations_by_username)
+        return conversations_by_username
+
     def retrieve_previous_conversation(self, user_id, conversation_name):
         """
             Retrieves a previous conversation by user ID and conversation name.
@@ -454,16 +499,17 @@ class Backend:
                 formatted_conversation += f"{content}\n"
             return formatted_conversation
 
-    def remove_conversation(self, conversation_name):
+    def remove_conversation(self, conversation_name, user_id):
         """
             Removes a conversation from the database.
 
             Args:
                 conversation_name (str): Conversation name.
+                user_id: User_ID
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''DELETE FROM Conversations 
-                     WHERE user_id = ? AND conversation_name = ?''', (self.global_user_id, conversation_name))
+                     WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
         conn.commit()
         conn.close()

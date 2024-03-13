@@ -345,7 +345,15 @@ class GUI:
 
             if confirmed:
                 # If user confirms deletion, proceed with deletion
-                self.backend.remove_conversation(conversation_name)
+                if self.first_name == 'CAA Staff':
+                    parent_item = self.tree.parent(selected_item)
+                    username_item = self.tree.parent(parent_item)
+                    username_text = self.tree.item(username_item, 'text')
+                    username = username_text.split("'s Conversations")[0]
+                    user_id = self.backend.get_user_id_by_username(username)
+                else:
+                    user_id = self.backend.get_user_id()
+                self.backend.remove_conversation(conversation_name, user_id)
                 self.load_previous_conversations()
                 self.clear_conversation()
                 print("Deleting conversation")
@@ -359,18 +367,30 @@ class GUI:
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Retrieve previous conversations from the backend grouped by mode
-        user_id = self.backend.get_user_id()
-        conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
+        if self.first_name == 'CAA Staff':
+            conversations_by_username = self.backend.retrieve_conversations_by_username(self.first_name)
+            for username, data in conversations_by_username.items():
+                user_node = self.tree.insert('', 'end', text=f"{username}'s Conversations")
+                for mode, conversations in data.items():
+                    if mode == 'Generate Conversation':
+                        mode_node = self.tree.insert(user_node, 'end', text=f"Generated Conversations")
+                    else:
+                        mode_node = self.tree.insert(user_node, 'end', text=f"{mode} Conversations")
+                    for conversation in conversations:
+                        self.tree.insert(mode_node, 'end', text=conversation)
+        else:
+            # Retrieve previous conversations from the backend grouped by mode
+            user_id = self.backend.get_user_id()
+            conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
 
-        # Insert mode folders and conversations into the TreeView
-        for mode, conversations in conversations_by_mode.items():
-            if mode == 'Generate Conversation':
-                mode_item = self.tree.insert('', 'end', text="Generated Conversations")
-            else:
-                mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
-            for conversation in conversations:
-                self.tree.insert(mode_item, 'end', text=conversation)
+            # Insert mode folders and conversations into the TreeView
+            for mode, conversations in conversations_by_mode.items():
+                if mode == 'Generate Conversation':
+                    mode_item = self.tree.insert('', 'end', text="Generated Conversations")
+                else:
+                    mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
+                for conversation in conversations:
+                    self.tree.insert(mode_item, 'end', text=conversation)
 
         self.tree.tag_configure('big_font', font=('Helvetica', 10))
         for item in self.tree.get_children():
@@ -388,7 +408,18 @@ class GUI:
         # Retrieve the conversation name associated with the selected item
         conversation_name = self.tree.item(selected_item, 'text')
 
-        user_id = self.backend.get_user_id()
+        if self.first_name == 'CAA Staff':
+            parent_item = self.tree.parent(selected_item)
+            username_item = self.tree.parent(parent_item)
+            username_text = self.tree.item(username_item, 'text')
+            username = username_text.split("'s Conversations")[0]
+            if username not in ['Tutee Conversations', 'Tutor Conversations', 'Generated Conversations', '']:
+                user_id = self.backend.get_user_id_by_username(username)
+            else:
+                return
+
+        else:
+            user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
         # Retrieve the conversation from the backend
         conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
