@@ -1,13 +1,18 @@
+import os
 import ttkbootstrap as tb
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from backend import Backend
 from PIL import Image, ImageTk
+from cryptography.fernet import Fernet
+import base64
 
 
 class StartFrame:
     def __init__(self, parent, on_start):
         self.parent = parent
         self.on_start = on_start
+        self.key = os.getenv('KEY')
+        self.encrypted_password = os.getenv('ENCRYPTED_PASSWORD')
 
         # Load the background image
         background_image = Image.open('images/login background.png')  # Open the image file
@@ -79,6 +84,11 @@ class StartFrame:
         if first_name == '':
             messagebox.showerror("Error", "Please enter your first name")
             return
+        elif first_name == 'CAA Staff':
+            password = simpledialog.askstring("Enter Password", "Please enter your password:", show='*', parent=self.frame)
+            if not self.verify_password(password):
+                messagebox.showerror("Error", "Incorrect Password")
+                return
         if self.selected_mode not in ['Tutor', 'Tutee', 'Generate Conversation']:
             messagebox.showerror("Error", "Please select mode")
             return
@@ -94,6 +104,16 @@ class StartFrame:
     def set_mode(self, mode):
         self.selected_mode = mode
         self.mode_menu.config(text=mode)
+
+    def verify_password(self, entered_password):
+        # Create a Fernet cipher with the encryption key
+        cipher = Fernet(self.key.encode())
+
+        # Decrypt the stored password and decode it
+        decrypted_password = cipher.decrypt(base64.b64decode(self.encrypted_password)).decode()
+
+        # Verify if the entered password matches the decrypted password
+        return entered_password == decrypted_password
 
 
 class GUI:
