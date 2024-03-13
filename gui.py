@@ -37,7 +37,7 @@ class StartFrame:
         # Create label for Name
         self.entry_label = tb.Label(self.frame, text='Name:', font=('Helvetica', 18), background='#cbcbcb',
                                     foreground='black')
-        self.entry_label.place(relx=0.38, rely=0.5, anchor=tb.CENTER)
+        self.entry_label.place(relx=0.37, rely=0.5, anchor=tb.CENTER)
 
         # Create the entry box
         self.entry = tb.Entry(self.frame, width=30, font=('Helvetica', 14))
@@ -196,38 +196,36 @@ class GUI:
         self.input_frame = tb.Frame(self.conversation_frame)
         self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
 
-        if self.mode != 'Generate Conversation':
-            # Add the entry box
-            self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
-            self.message_entry.bind("<Return>", lambda event: self.add_message())
-            self.message_entry.pack(side=tb.LEFT, padx=(0, 5))
-
-        # Add the enter button
-        if self.mode == 'Generate Conversation':
-            self.add_message_button_text = 'Generate New Messages'
-        else:
-            self.add_message_button_text = 'Enter'
-        self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
-                                            command=self.add_message, style='success')
-        self.add_message_button.pack(side=tb.LEFT)
-
-        # Add the save button
-        self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
-        self.save_button.pack(side=tb.RIGHT)
-
         # Add the delete button
         self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
                                        style='warning')
-        self.delete_button.pack(side=tb.RIGHT, padx=10)
+        self.delete_button.pack(side=tb.RIGHT, padx=(5, 10))
 
-        # Add start conversation button
-        if self.mode == 'Generate Conversation':
-            self.start_conversation_button_text = 'Generate Conversation'
-        else:
-            self.start_conversation_button_text = 'Start Conversation'
-        self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
-                                                   command=self.start_conversation, style='success')
-        self.start_conversation_button.pack(side=tb.RIGHT, padx=5)
+        if self.first_name != 'CAA Staff':
+            # Add the entry box
+            if self.mode != 'Generate Conversation':
+                self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
+                self.message_entry.bind("<Return>", lambda event: self.add_message())
+                self.message_entry.pack(side=tb.LEFT, padx=(0, 5))
+            # Add the enter button
+            if self.mode == 'Generate Conversation':
+                self.add_message_button_text = 'Generate New Messages'
+            else:
+                self.add_message_button_text = 'Enter'
+            self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
+                                                command=self.add_message, style='success')
+            self.add_message_button.pack(side=tb.LEFT)
+            # Add the save button
+            self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
+            self.save_button.pack(side=tb.RIGHT)
+            # Add start conversation button
+            if self.mode == 'Generate Conversation':
+                self.start_conversation_button_text = 'Generate Conversation'
+            else:
+                self.start_conversation_button_text = 'Start Conversation'
+            self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
+                                                       command=self.start_conversation, style='success')
+            self.start_conversation_button.pack(side=tb.RIGHT, padx=(0, 5))
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
@@ -239,7 +237,7 @@ class GUI:
         # Create the TreeView
         self.tree = tb.Treeview(self.tree_frame, columns=('conversation',), style='primary')
         self.tree.heading('#0', text='Previous Conversations', anchor='w')
-        self.tree.column('#0', width=250)
+        self.tree.column('#0', width=300)
         self.tree.pack(expand=True, fill=tb.BOTH)
 
         # Load previous conversations into the TreeView
