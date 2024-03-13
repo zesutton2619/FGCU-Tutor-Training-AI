@@ -25,14 +25,14 @@ class StartFrame:
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Create a label for the name of the program text with the same background color
-        self.start_label = tb.Label(self.frame, text='Name of Program', font=('Helvetica', 18), background='#cdcfcd',
+        self.start_label = tb.Label(self.frame, text='FGCU Tutor Training AI', font=('Helvetica', 18), background='#cdcfcd',
                                     foreground='black')
         self.start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
 
         # Create label for Name
         self.entry_label = tb.Label(self.frame, text='Name:', font=('Helvetica', 18), background='#cbcbcb',
                                     foreground='black')
-        self.entry_label.place(relx=0.36, rely=0.5, anchor=tb.CENTER)
+        self.entry_label.place(relx=0.38, rely=0.5, anchor=tb.CENTER)
 
         # Create the entry box
         self.entry = tb.Entry(self.frame, width=30, font=('Helvetica', 14))
@@ -53,7 +53,7 @@ class StartFrame:
         for subject in subjects:
             self.subject_menu.menu.add_command(label=subject, command=lambda s=subject: self.set_subject(s))
 
-        self.subject_menu.place(relx=0.458, rely=0.55, anchor=tb.CENTER)
+        self.subject_menu.place(relx=0.5, rely=0.55, anchor=tb.CENTER)
 
         # # Create menu for selecting mode
         # self.subject_label = tb.Label(self.frame, text='Select the mode for the AI', font=('Helvetica', 14),
@@ -67,7 +67,7 @@ class StartFrame:
         modes = ['Tutor', 'Tutee', 'Generate Conversation']
         for mode in modes:
             self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.set_mode(m))
-        self.mode_menu.place(relx=00.458, rely=0.6, anchor=tb.CENTER)
+        self.mode_menu.place(relx=0.5, rely=0.6, anchor=tb.CENTER)
 
         # Create the Start button
         style.configure('TButton', font=('Helvetica', 14))
