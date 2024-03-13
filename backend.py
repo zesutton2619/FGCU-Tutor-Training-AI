@@ -1,6 +1,8 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from docx import Document
+from fpdf import FPDF
 import time
 import os
 import datetime
@@ -253,3 +255,68 @@ class Backend:
         print("conversation name: ", conversation_name)
         self.conversations_collection.find_one_and_delete({'user_id': self.global_user_id,
                                                            'conversation_name': conversation_name})
+# --------------------------------------------------------------
+# Export conversation to word document or pdf
+# --------------------------------------------------------------
+
+
+class ConversationExporter:
+
+    def __init__(self, MONGO_URI):
+        self.MONGO_URI = MONGO_URI
+        self.client_mongo = MongoClient(self.MONGO_URI)
+        self.db = self.client_mongo["Test"]
+        self.conversations_collection = self.db["Conversations"]
+
+    def export_to_word(self, filename, conversation_data):
+        document = Document()
+
+        user_messages = None
+        assistant_messages = None
+        for document in conversation_data:
+            user_messages = document.get('user_messages', [])
+            assistant_messages = document.get('assistant_messages', [])
+
+        # Add user and assistant messages to the document
+        for message in user_messages:
+            document.add_paragraph(f"User: {message['content']}")
+        for message in assistant_messages:
+            document.add_paragraph(f"Tutor: {message['content']}")
+
+        # Save the document
+        document.save(filename)
+
+    def export_to_pdf(self, filename, conversation_data):
+        # Initialize PDF object
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        # Add a page
+        pdf.add_page()
+
+        # Set font for the entire document
+        pdf.set_font("Times New Roman", size=12)
+
+        # Add content to the PDF
+        for message in conversation_data:
+            user_messages = message.get('user_messages', [])
+            assistant_messages = message.get('assistant_messages', [])
+
+            for user_message in user_messages:
+                pdf.cell(0, 10, f"User: {user_message['content']}", ln=True)
+
+            for assistant_message in assistant_messages:
+                pdf.cell(0, 10, f"Tutor: {assistant_message['content']}", ln=True)
+
+        # Save the PDF to the specified filename
+        pdf.output(filename)
+
+        if __name__ == "__main__":
+            # Fetch MongoDB URI from environment variable
+            mongo_uri = os.getenv(self.MONGO_URI)
+
+            # Create an instance of ConversationExporter
+            exporter = ConversationExporter(self.MONGO_URI)
+
+            # Export conversation to Word document
+            exporter.export_to_word("conversation.docx")

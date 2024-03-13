@@ -1,5 +1,6 @@
 import ttkbootstrap as tb
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
+from backend import ConversationExporter
 from backend import Backend
 from PIL import Image, ImageTk
 
@@ -95,7 +96,9 @@ class StartFrame:
         self.selected_mode = mode
         self.mode_menu.config(text=mode)
 
+
 class GUI:
+
     def __init__(self, root):
         self.conversation_frame = None
         self.input_frame = None
@@ -106,6 +109,7 @@ class GUI:
         self.exit_button = None
         self.save_button = None
         self.delete_button = None
+        self.export_menu_button = None
         self.start_conversation_button = None
         self.info_label = None
         self.conversation_text = None
@@ -144,6 +148,21 @@ class GUI:
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
+
+    def export_options(self, selected_option, MONGO_URI, conversation_data):
+
+        filename = filedialog.asksaveasfilename(defaultextension=".docx" if selected_option == "Word document" else ".pdf")
+        if filename:
+            exporter = ConversationExporter(MONGO_URI)
+            try:
+                if selected_option == "Word document":
+                    exporter.export_to_word(filename, conversation_data)
+                else:
+                    exporter.export_to_pdf(filename, conversation_data)
+                messagebox.showinfo("Success", f"{selected_option} exported successfully.\nFile"
+                                               f" exported to: {filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export {selected_option}: {str(e)}")
 
     def show_main_frame(self):
         self.main_frame = tb.Frame(self.root)
@@ -190,6 +209,23 @@ class GUI:
         self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
                                        style='warning')
         self.delete_button.pack(side=tb.RIGHT, padx=10)
+
+        # Add export menu button
+        style = tb.Style()
+        style.configure('TMenubutton', font=('Helvetica', 14), width=7)
+        self.export_menu_button = "Export"
+        self.export_menu_button = tb.Menubutton(self.input_frame, text=f'{self.export_menu_button}', direction="below",
+                                                style='primary')
+        self.export_menu_button.menu = tb.Menu(self.export_menu_button, tearoff=False)
+        self.export_menu_button.configure(menu=self.export_menu_button.menu)
+        self.export_menu_button.menu.config(font=('Helvetica', 14))
+
+        export_choices = ["Word document", "PDF document"]
+        for option in export_choices:
+            self.export_menu_button.menu.add_command(label=option, command=lambda
+                opt=option: self.export_options(opt, MONGO_URI, conversation_data))
+
+        self.export_menu_button.pack(side=tb.LEFT, padx=5)
 
         # Add start conversation button
         self.start_conversation_button = tb.Button(self.input_frame, text="Start Conversation",
