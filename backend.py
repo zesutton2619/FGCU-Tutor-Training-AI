@@ -453,6 +453,21 @@ class Backend:
         else:
             return None
 
+    def remove_conversation(self, conversation_name, user_id):
+        """
+            Removes a conversation from the database.
+
+            Args:
+                conversation_name (str): Conversation name.
+                user_id: User_ID
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''DELETE FROM Conversations 
+                     WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
+        conn.commit()
+        conn.close()
+
     @staticmethod
     def format_conversation(conversation):
         """
@@ -498,18 +513,3 @@ class Backend:
                 content = message["content"]
                 formatted_conversation += f"{content}\n"
             return formatted_conversation
-
-    def remove_conversation(self, conversation_name, user_id):
-        """
-            Removes a conversation from the database.
-
-            Args:
-                conversation_name (str): Conversation name.
-                user_id: User_ID
-        """
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute('''DELETE FROM Conversations 
-                     WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
-        conn.commit()
-        conn.close()

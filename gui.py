@@ -30,8 +30,8 @@ class StartFrame:
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Create a label for the name of the program text with the same background color
-        self.start_label = tb.Label(self.frame, text='FGCU Tutor Training AI', font=('Helvetica', 18), background='#cdcfcd',
-                                    foreground='black')
+        self.start_label = tb.Label(self.frame, text='FGCU Tutor Training AI', font=('Helvetica', 18),
+                                    background='#cdcfcd', foreground='black')
         self.start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
 
         # Create label for Name
@@ -85,7 +85,8 @@ class StartFrame:
             messagebox.showerror("Error", "Please enter your first name")
             return
         elif first_name == 'CAA Staff':
-            password = simpledialog.askstring("Enter Password", "Please enter your password:", show='*', parent=self.frame)
+            password = simpledialog.askstring("Enter Password", "Please enter your password:", show='*',
+                                              parent=self.frame)
             if not self.verify_password(password):
                 messagebox.showerror("Error", "Incorrect Password")
                 return
@@ -199,14 +200,14 @@ class GUI:
         # Add the delete button
         self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
                                        style='warning')
-        self.delete_button.pack(side=tb.RIGHT, padx=(5, 10))
+        self.delete_button.grid(row=0, column=5, padx=(5, 10))
 
         if self.first_name != 'CAA Staff':
             # Add the entry box
             if self.mode != 'Generate Conversation':
-                self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
+                self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=45, font=('Helvetica', 12))
                 self.message_entry.bind("<Return>", lambda event: self.add_message())
-                self.message_entry.pack(side=tb.LEFT, padx=(0, 5))
+                self.message_entry.grid(row=0, column=0, padx=(0, 5))
             # Add the enter button
             if self.mode == 'Generate Conversation':
                 self.add_message_button_text = 'Generate New Messages'
@@ -214,10 +215,12 @@ class GUI:
                 self.add_message_button_text = 'Enter'
             self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
                                                 command=self.add_message, style='success')
-            self.add_message_button.pack(side=tb.LEFT)
+            self.add_message_button.grid(row=0, column=1, padx=(5, 40))
+
             # Add the save button
             self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
-            self.save_button.pack(side=tb.RIGHT)
+            self.save_button.grid(row=0, column=4, padx=(5, 5))
+
             # Add start conversation button
             if self.mode == 'Generate Conversation':
                 self.start_conversation_button_text = 'Generate Conversation'
@@ -225,7 +228,7 @@ class GUI:
                 self.start_conversation_button_text = 'Start Conversation'
             self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
                                                        command=self.start_conversation, style='success')
-            self.start_conversation_button.pack(side=tb.RIGHT, padx=(0, 5))
+            self.start_conversation_button.grid(row=0, column=3, padx=(10, 5))
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
@@ -283,7 +286,7 @@ class GUI:
 
         else:
 
-            message = self.message_entry.get("1.0", tb.END).strip()  # Strip newline character
+            message = self.message_entry.get("1.0", tb.END)
             if self.message == 'Start':
                 response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
                 self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
