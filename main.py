@@ -2,7 +2,6 @@ import gui
 from tkinter import messagebox
 
 
-# Test assistant
 if __name__ == "__main__":
     try:
         gui.start_gui()
