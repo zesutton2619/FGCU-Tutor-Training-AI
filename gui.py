@@ -1,14 +1,18 @@
+import os
 import ttkbootstrap as tb
-from tkinter import messagebox, filedialog
-from backend import ConversationExporter
+from tkinter import messagebox, simpledialog, filedialog
 from backend import Backend
 from PIL import Image, ImageTk
+from cryptography.fernet import Fernet
+import base64
 
 
 class StartFrame:
     def __init__(self, parent, on_start):
         self.parent = parent
         self.on_start = on_start
+        self.key = os.getenv('KEY')
+        self.encrypted_password = os.getenv('ENCRYPTED_PASSWORD')
 
         # Load the background image
         background_image = Image.open('images/login background.png')  # Open the image file
@@ -26,14 +30,14 @@ class StartFrame:
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Create a label for the name of the program text with the same background color
-        self.start_label = tb.Label(self.frame, text='Name of Program', font=('Helvetica', 18), background='#cdcfcd',
-                                    foreground='black')
+        self.start_label = tb.Label(self.frame, text='FGCU Tutor Training AI', font=('Helvetica', 18),
+                                    background='#cdcfcd', foreground='black')
         self.start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
 
         # Create label for Name
         self.entry_label = tb.Label(self.frame, text='Name:', font=('Helvetica', 18), background='#cbcbcb',
                                     foreground='black')
-        self.entry_label.place(relx=0.36, rely=0.5, anchor=tb.CENTER)
+        self.entry_label.place(relx=0.37, rely=0.5, anchor=tb.CENTER)
 
         # Create the entry box
         self.entry = tb.Entry(self.frame, width=30, font=('Helvetica', 14))
@@ -42,7 +46,7 @@ class StartFrame:
 
         # Create menu for selecting subjects
         style = tb.Style()
-        style.configure('TMenubutton', font=('Helvetica', 14), width=15)
+        style.configure('TMenubutton', font=('Helvetica', 14), width=20)
         self.selected_subject = "Select a subject"
         self.subject_menu = tb.Menubutton(self.frame, text=f'{self.selected_subject}', direction="below",
                                           style='primary')
@@ -54,7 +58,7 @@ class StartFrame:
         for subject in subjects:
             self.subject_menu.menu.add_command(label=subject, command=lambda s=subject: self.set_subject(s))
 
-        self.subject_menu.place(relx=0.458, rely=0.55, anchor=tb.CENTER)
+        self.subject_menu.place(relx=0.5, rely=0.55, anchor=tb.CENTER)
 
         # # Create menu for selecting mode
         # self.subject_label = tb.Label(self.frame, text='Select the mode for the AI', font=('Helvetica', 14),
@@ -68,7 +72,7 @@ class StartFrame:
         modes = ['Tutor', 'Tutee', 'Generate Conversation']
         for mode in modes:
             self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.set_mode(m))
-        self.mode_menu.place(relx=00.458, rely=0.6, anchor=tb.CENTER)
+        self.mode_menu.place(relx=0.5, rely=0.6, anchor=tb.CENTER)
 
         # Create the Start button
         style.configure('TButton', font=('Helvetica', 14))
@@ -80,6 +84,12 @@ class StartFrame:
         if first_name == '':
             messagebox.showerror("Error", "Please enter your first name")
             return
+        elif first_name == 'CAA Staff':
+            password = simpledialog.askstring("Enter Password", "Please enter your password:", show='*',
+                                              parent=self.frame)
+            if not self.verify_password(password):
+                messagebox.showerror("Error", "Incorrect Password")
+                return
         if self.selected_mode not in ['Tutor', 'Tutee', 'Generate Conversation']:
             messagebox.showerror("Error", "Please select mode")
             return
@@ -96,28 +106,45 @@ class StartFrame:
         self.selected_mode = mode
         self.mode_menu.config(text=mode)
 
+    def verify_password(self, entered_password):
+        # Create a Fernet cipher with the encryption key
+        cipher = Fernet(self.key.encode())
+
+        # Decrypt the stored password and decode it
+        decrypted_password = cipher.decrypt(base64.b64decode(self.encrypted_password)).decode()
+
+        # Verify if the entered password matches the decrypted password
+        return entered_password == decrypted_password
+
 
 class GUI:
-
     def __init__(self, root):
         self.conversation_frame = None
         self.input_frame = None
         self.tree_frame = None
+        self.exit_and_export_frame = None
         self.tree = None
         self.scrollbar = None
         self.add_message_button = None
         self.exit_button = None
+        self.export_button = None
         self.save_button = None
         self.delete_button = None
-        self.export_menu_button = None
         self.start_conversation_button = None
         self.info_label = None
         self.conversation_text = None
-        self.add_message_entry = None
+        self.export_conversation_name = None
+        self.export_conversation = None
+        self.export_username = None
+        self.export_user_id = None
+        self.start_conversation_button_text = None
+        self.add_message_button_text = None
+        self.message_entry = None
         self.message = None
         self.first_name = None
         self.subject = None
         self.mode = None
+        self.path = os.path.join(os.getcwd(), 'Exported Conversations')
         self.root = root
         self.backend = Backend()
         self.previous_conversation_loaded = False
@@ -149,21 +176,6 @@ class GUI:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
 
-    def export_options(self, selected_option, MONGO_URI, conversation_data):
-
-        filename = filedialog.asksaveasfilename(defaultextension=".docx" if selected_option == "Word document" else ".pdf")
-        if filename:
-            exporter = ConversationExporter(MONGO_URI)
-            try:
-                if selected_option == "Word document":
-                    exporter.export_to_word(filename, conversation_data)
-                else:
-                    exporter.export_to_pdf(filename, conversation_data)
-                messagebox.showinfo("Success", f"{selected_option} exported successfully.\nFile"
-                                               f" exported to: {filename}")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to export {selected_option}: {str(e)}")
-
     def show_main_frame(self):
         self.main_frame = tb.Frame(self.root)
         self.main_frame.pack(expand=True, fill=tb.BOTH)
@@ -180,70 +192,74 @@ class GUI:
         # Create conversation display area
         self.conversation_text = tb.Text(self.conversation_frame, wrap=tb.WORD, state='disabled', height=20, width=100,
                                          font=('Helvetica', 12))
-        self.conversation_text.pack(expand=True, fill=tb.BOTH, padx=10, pady=5)
+        self.conversation_text.pack(expand=True, fill=tb.BOTH, padx=10, pady=5, side=tb.TOP)
 
         # Add a scrollbar to the conversation text widget
-        self.scrollbar = tb.Scrollbar(self.conversation_text, orient=tb.VERTICAL,
-                                      command=self.conversation_text.yview, style='primary-round')
+        self.scrollbar = tb.Scrollbar(self.conversation_text, orient=tb.VERTICAL, command=self.conversation_text.yview,
+                                      style='primary-round')
         self.scrollbar.pack(side=tb.RIGHT, fill=tb.Y)
-        self.conversation_text.config(yscrollcommand=self.scrollbar.set)
 
         # Create a frame to hold the entry box and button
         self.input_frame = tb.Frame(self.conversation_frame)
-        self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
-
-        # Add the entry box
-        self.add_message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=50, font=('Helvetica', 12))
-        self.add_message_entry.bind("<Return>", lambda event: self.add_message())
-        self.add_message_entry.pack(side=tb.LEFT, padx=(0, 5))
-
-        # Add the enter button
-        self.add_message_button = tb.Button(self.input_frame, text="Enter", command=self.add_message, style='success')
-        self.add_message_button.pack(side=tb.LEFT)
-
-        # Add the save button
-        self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
-        self.save_button.pack(side=tb.RIGHT)
+        self.input_frame.pack(side=tb.TOP, fill=tb.X, padx=10, pady=10)
 
         # Add the delete button
         self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
                                        style='warning')
-        self.delete_button.pack(side=tb.RIGHT, padx=10)
+        self.delete_button.pack(side=tb.RIGHT, padx=5)
 
-        # Add export menu button
-        style = tb.Style()
-        style.configure('TMenubutton', font=('Helvetica', 14), width=7)
-        self.export_menu_button = "Export"
-        self.export_menu_button = tb.Menubutton(self.input_frame, text=f'{self.export_menu_button}', direction="below",
-                                                style='primary')
-        self.export_menu_button.menu = tb.Menu(self.export_menu_button, tearoff=False)
-        self.export_menu_button.configure(menu=self.export_menu_button.menu)
-        self.export_menu_button.menu.config(font=('Helvetica', 14))
+        if self.first_name != 'CAA Staff':
+            # Add the entry box
+            if self.mode != 'Generate Conversation':
+                self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=45, font=('Helvetica', 12))
+                self.message_entry.bind("<Return>", lambda event: self.add_message())
+                self.message_entry.pack(side=tb.LEFT, padx=(0, 5))
+            # Add the enter button
+            if self.mode == 'Generate Conversation':
+                self.add_message_button_text = 'Generate New Messages'
+            else:
+                self.add_message_button_text = 'Enter'
+            self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
+                                                command=self.add_message, style='success')
+            self.add_message_button.pack(side=tb.LEFT, padx=(5, 40))
 
-        export_choices = ["Word document", "PDF document"]
-        for option in export_choices:
-            self.export_menu_button.menu.add_command(label=option, command=lambda
-                opt=option: self.export_options(opt, MONGO_URI, conversation_data))
+            # Configure column widths to make buttons appear to the right
+            self.input_frame.columnconfigure(2, weight=1)  # This will expand empty space between buttons
 
-        self.export_menu_button.pack(side=tb.LEFT, padx=5)
+            # Add the save button
+            self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
+            self.save_button.pack(side=tb.RIGHT, padx=(5, 5))
 
-        # Add start conversation button
-        self.start_conversation_button = tb.Button(self.input_frame, text="Start Conversation",
-                                                   command=self.start_conversation, style='success')
-        self.start_conversation_button.pack(side=tb.RIGHT, padx=5)
+            # Add start conversation button
+            if self.mode == 'Generate Conversation':
+                self.start_conversation_button_text = 'Generate Conversation'
+            else:
+                self.start_conversation_button_text = 'Start Conversation'
+            self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
+                                                       command=self.start_conversation, style='success')
+            self.start_conversation_button.pack(side=tb.RIGHT, padx=(10, 5))
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
         self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH)
 
-        self.exit_button = tb.Button(self.tree_frame, text="Exit", command=self.exit, style='danger')
-        self.exit_button.pack(side=tb.BOTTOM, pady=10, anchor='sw')
-
         # Create the TreeView
         self.tree = tb.Treeview(self.tree_frame, columns=('conversation',), style='primary')
         self.tree.heading('#0', text='Previous Conversations', anchor='w')
-        self.tree.column('#0', width=250)
+        self.tree.column('#0', width=300)
         self.tree.pack(expand=True, fill=tb.BOTH)
+
+        # Create the frame for exit and export buttons
+        self.exit_and_export_frame = tb.Frame(self.tree_frame, padding=(10, 10, 10, 20))
+        self.exit_and_export_frame.pack(side=tb.BOTTOM, fill=tb.X)
+
+        # Create the Exit button
+        self.exit_button = tb.Button(self.exit_and_export_frame, text="Exit", command=self.exit, style='danger')
+        self.exit_button.pack(side=tb.LEFT, anchor='sw', padx=(0, 10), pady=5)
+
+        # Create the Export button
+        self.export_button = tb.Button(self.exit_and_export_frame, text='Export', command=self.export, style='primary')
+        self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
         self.load_previous_conversations()
@@ -268,46 +284,43 @@ class GUI:
 
     def add_message(self):
         if not self.started_conversation and self.previous_conversation_loaded:
-            messagebox.showwarning('Error', 'You must start a conversation first')
+            if self.mode == 'Generate Conversation':
+                messagebox.showwarning('Error', 'You must generate a conversation first')
+            else:
+                messagebox.showwarning('Error', 'You must start a conversation first')
             return
         elif self.previous_conversation_loaded:
             self.clear_conversation()
             self.previous_conversation_loaded = False
 
-        self.conversation_text.config(state='normal')  # Set state to normal to allow editing
-        message = self.add_message_entry.get("1.0", tb.END).strip()  # Strip newline character
+        self.conversation_text.config(state='normal')  # Set state too normal to allow editing
+        conversation_name = self.backend.get_conversation_name()
+        user_id = self.backend.get_user_id()
 
         if self.mode == 'Generate Conversation':
-            # Disable the entry box entirely if the mode is "Generate Conversation"
-            self.add_message_entry.config(state='disabled')
+            response = self.backend.generate_response('Continue Conversation', user_id,
+                                                      self.first_name, conversation_name)
+            self.conversation_text.insert(tb.END, f"{response}\n\n")
 
         else:
-            # Enable the entry box for other modes
-            self.add_message_entry.config(state='normal')
 
-        if self.message == 'Start':
-            conversation_name = self.backend.get_conversation_name()
-            user_id = self.backend.get_user_id()
-            response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
-            self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
-            self.message = ''
-        elif self.add_message_button.winfo_ismapped():
-            if self.mode == 'Generate Conversation':
-                messagebox.showwarning('Error', 'User entry is disabled in generate conversation mode')
+            message = self.message_entry.get("1.0", tb.END)
+            if self.message == 'Start':
+                response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
+                self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
+                self.message = ''
             elif message == '' and self.started_conversation:
                 messagebox.showwarning('Error', 'Enter a message')
                 return
             else:
                 self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
-                conversation_name = self.backend.get_conversation_name()
-                user_id = self.backend.get_user_id()
                 response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
-                self.conversation_text.insert(tb.END, f"{self.subject} Tutee: {response}\n\n")
+                self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
+
+            # Clear the entry box after adding the message
+            self.message_entry.delete(1.0, tb.END)
 
         self.conversation_text.config(state='disabled')
-
-        # Clear the entry box after adding the message
-        self.add_message_entry.delete(1.0, tb.END)
 
         # Scroll to the bottom of the conversation text widget
         self.conversation_text.see(tb.END)
@@ -333,6 +346,66 @@ class GUI:
         print("new conversation name:  ", self.backend.get_conversation_name())
         print("Conversation cleared. You can start a new conversation now.")
 
+    def export(self):
+        if self.export_username is None or self.export_conversation_name is None:
+            messagebox.showerror("Error", "Must select previous conversation to export")
+            return
+
+        def on_button_click(export_format):
+            # Call the backend function to export the conversation
+            self.backend.export_conversation(export_format, self.export_conversation_name, self.export_username,
+                                             self.export_user_id, self.path)
+            # Close the pop-up window
+            top.destroy()
+
+        # Create a new pop-up window
+        top = tb.Toplevel()
+        top.title("Export Conversation")
+
+        # Set minimum size for the window
+        top.minsize(300, 125)
+
+        # Add a label to indicate the purpose of the window
+        label = tb.Label(top, text="Select format to export:", font=('Helvetica', 12))
+        label.pack(pady=10)
+
+        # Create a frame to hold the buttons horizontally
+        button_frame = tb.Frame(top)
+        button_frame.pack()
+
+        # Add buttons for exporting to Word Doc and PDF
+        word_doc_button = tb.Button(button_frame, text="Word Doc", command=lambda: on_button_click("Word Doc"))
+        word_doc_button.pack(side='left', padx=5, pady=5)
+
+        pdf_button = tb.Button(button_frame, text="PDF", command=lambda: on_button_click("PDF"))
+        pdf_button.pack(side='left', padx=5, pady=5)
+
+        # Add button to set export directory
+        set_directory_button = tb.Button(top, text="Set Export Directory",
+                                         command=lambda: self.set_export_directory(selected_directory_label))
+        set_directory_button.pack(pady=5)
+
+        # Add label to show directory
+        selected_directory_label = tb.Label(top, text=self.path, font=('Helvetica', 12))
+        selected_directory_label.pack(side=tb.BOTTOM)
+
+        # Make the pop-up window modal (prevent interaction with other windows)
+        top.grab_set()
+        # Wait for the pop-up window to be closed before returning
+        top.wait_window()
+
+    def set_export_directory(self, label_widget):
+        # Open a file dialog to select the export directory
+        export_directory = filedialog.askdirectory(initialdir=os.getcwd())
+
+        # Update the label with the selected directory
+        if export_directory:
+            self.path = export_directory
+            label_widget.config(text=self.path)
+            print("Export directory selected:", export_directory)
+        else:
+            print("No export directory selected.")
+
     def is_conversation_empty(self):
         # Get the content of the conversation text widget
         conversation_content = self.conversation_text.get("1.0", tb.END).strip()
@@ -351,7 +424,15 @@ class GUI:
 
             if confirmed:
                 # If user confirms deletion, proceed with deletion
-                self.backend.remove_conversation(conversation_name)
+                if self.first_name == 'CAA Staff':
+                    parent_item = self.tree.parent(selected_item)
+                    username_item = self.tree.parent(parent_item)
+                    username_text = self.tree.item(username_item, 'text')
+                    username = username_text.split("'s Conversations")[0]
+                    user_id = self.backend.get_user_id_by_username(username)
+                else:
+                    user_id = self.backend.get_user_id()
+                self.backend.remove_conversation(conversation_name, user_id)
                 self.load_previous_conversations()
                 self.clear_conversation()
                 print("Deleting conversation")
@@ -365,28 +446,30 @@ class GUI:
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        # Retrieve previous conversations from the backend
-        user_id = self.backend.get_user_id()
-        previous_conversations = self.backend.retrieve_previous_conversation_names(user_id)
+        if self.first_name == 'CAA Staff':
+            conversations_by_username = self.backend.retrieve_conversations_by_username(self.first_name)
+            for username, data in conversations_by_username.items():
+                user_node = self.tree.insert('', 'end', text=f"{username}'s Conversations")
+                for mode, conversations in data.items():
+                    if mode == 'Generate Conversation':
+                        mode_node = self.tree.insert(user_node, 'end', text=f"Generated Conversations")
+                    else:
+                        mode_node = self.tree.insert(user_node, 'end', text=f"{mode} Conversations")
+                    for conversation in conversations:
+                        self.tree.insert(mode_node, 'end', text=conversation)
+        else:
+            # Retrieve previous conversations from the backend grouped by mode
+            user_id = self.backend.get_user_id()
+            conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
 
-        # Insert previous conversations into the TreeView
-        mode_conversations = {}
-        for conversation in previous_conversations:
-            mode = conversation.get("mode", "Unknown Mode")  # Get mode if exists, otherwise default to "Unknown Mode"
-            conversation_name = conversation["conversation_name"]
-
-            # Create mode key if not exists
-            if mode not in mode_conversations:
-                mode_conversations[mode] = []
-
-            # Append conversation name to corresponding mode
-            mode_conversations[mode].append(conversation_name)
-
-        # Insert mode folders and conversations into the TreeView
-        for mode, conversations in mode_conversations.items():
-            mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
-            for conversation in conversations:
-                self.tree.insert(mode_item, 'end', text=conversation)
+            # Insert mode folders and conversations into the TreeView
+            for mode, conversations in conversations_by_mode.items():
+                if mode == 'Generate Conversation':
+                    mode_item = self.tree.insert('', 'end', text="Generated Conversations")
+                else:
+                    mode_item = self.tree.insert('', 'end', text=f"{mode} Conversations")
+                for conversation in conversations:
+                    self.tree.insert(mode_item, 'end', text=conversation)
 
         self.tree.tag_configure('big_font', font=('Helvetica', 10))
         for item in self.tree.get_children():
@@ -404,9 +487,24 @@ class GUI:
         # Retrieve the conversation name associated with the selected item
         conversation_name = self.tree.item(selected_item, 'text')
 
-        user_id = self.backend.get_user_id()
+        if self.first_name == 'CAA Staff':
+            parent_item = self.tree.parent(selected_item)
+            username_item = self.tree.parent(parent_item)
+            username_text = self.tree.item(username_item, 'text')
+            username = username_text.split("'s Conversations")[0]
+            if username not in ['Tutee Conversations', 'Tutor Conversations', 'Generated Conversations', '']:
+                user_id = self.backend.get_user_id_by_username(username)
+            else:
+                return
+
+        else:
+            username = self.first_name
+            user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
         # Retrieve the conversation from the backend
+        self.export_conversation_name = conversation_name
+        self.export_username = username
+        self.export_user_id = user_id
         conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
         # print(conversation)
         if conversation:
@@ -417,12 +515,6 @@ class GUI:
             self.conversation_text.config(state='normal')  # Set state too normal to allow editing
             self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
             self.conversation_text.insert(tb.END, formatted_conversation)  # Insert selected conversation
-            self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
-        else:
-            # If conversation is not found, display a message
-            self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-            self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
-            self.conversation_text.insert(tb.END, "Conversation not found.")  # Insert message
             self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
     def clear_conversation(self):
