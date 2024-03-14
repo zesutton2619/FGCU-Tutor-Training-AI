@@ -1,6 +1,6 @@
 import os
 import ttkbootstrap as tb
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, filedialog
 from backend import Backend
 from PIL import Image, ImageTk
 from cryptography.fernet import Fernet
@@ -126,11 +126,15 @@ class GUI:
         self.scrollbar = None
         self.add_message_button = None
         self.exit_button = None
+        self.export_button = None
         self.save_button = None
         self.delete_button = None
         self.start_conversation_button = None
         self.info_label = None
         self.conversation_text = None
+        self.export_conversation_name = None
+        self.export_username = None
+        self.export_user_id = None
         self.start_conversation_button_text = None
         self.add_message_button_text = None
         self.message_entry = None
@@ -138,6 +142,7 @@ class GUI:
         self.first_name = None
         self.subject = None
         self.mode = None
+        self.path = os.path.join(os.getcwd(), 'Exported Conversations')
         self.root = root
         self.backend = Backend()
         self.previous_conversation_loaded = False
@@ -217,6 +222,12 @@ class GUI:
                                                 command=self.add_message, style='success')
             self.add_message_button.grid(row=0, column=1, padx=(5, 40))
 
+            # Configure column widths to make buttons appear to the right
+            self.input_frame.columnconfigure(2, weight=1)  # This will expand empty space between buttons
+            self.input_frame.columnconfigure(3, weight=0)  # Adjust the weight to adjust the space between buttons
+            self.input_frame.columnconfigure(4, weight=0)  # Adjust the weight to adjust the space between buttons
+            self.input_frame.columnconfigure(5, weight=0)  # Adjust the weight to adjust the space between buttons
+
             # Add the save button
             self.save_button = tb.Button(self.input_frame, text="Save Conversation", command=self.save_conversation)
             self.save_button.grid(row=0, column=4, padx=(5, 5))
@@ -232,16 +243,21 @@ class GUI:
 
         # Create a frame to hold the TreeView
         self.tree_frame = tb.Frame(self.main_frame, padding=(10, 10, 10, 20))
-        self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH)
-
-        self.exit_button = tb.Button(self.tree_frame, text="Exit", command=self.exit, style='danger')
-        self.exit_button.pack(side=tb.BOTTOM, pady=10, anchor='sw')
+        self.tree_frame.pack(side=tb.LEFT, fill=tb.BOTH, expand=True)
 
         # Create the TreeView
         self.tree = tb.Treeview(self.tree_frame, columns=('conversation',), style='primary')
         self.tree.heading('#0', text='Previous Conversations', anchor='w')
         self.tree.column('#0', width=300)
         self.tree.pack(expand=True, fill=tb.BOTH)
+
+        # Create the Exit button
+        self.exit_button = tb.Button(self.tree_frame, text="Exit", command=self.exit, style='danger')
+        self.exit_button.pack(side=tb.LEFT, anchor='sw', padx=5, pady=10)
+
+        # Create the Export button
+        self.export_button = tb.Button(self.tree_frame, text='Export', command=self.export, style='primary')
+        self.export_button.pack(side=tb.RIGHT, anchor='se', padx=5, pady=10)
 
         # Load previous conversations into the TreeView
         self.load_previous_conversations()
@@ -327,6 +343,66 @@ class GUI:
         self.backend.create_conversation_name()  # create new conversation name
         print("new conversation name:  ", self.backend.get_conversation_name())
         print("Conversation cleared. You can start a new conversation now.")
+
+    def export(self):
+        def on_button_click(export_format):
+            # Call the backend function to export the conversation
+            if self.export_username is None or self.export_conversation_name is None:
+                messagebox.showerror("Error", "Must select previous conversation to export")
+                return
+            else:
+                self.backend.export_conversation(export_format, self.export_conversation_name, self.export_username,
+                                                 self.export_user_id, self.path)
+            # Close the pop-up window
+            top.destroy()
+
+        # Create a new pop-up window
+        top = tb.Toplevel()
+        top.title("Export Conversation")
+
+        # Set minimum size for the window
+        top.minsize(300, 125)
+
+        # Add a label to indicate the purpose of the window
+        label = tb.Label(top, text="Select format to export:", font=('Helvetica', 12))
+        label.pack(pady=10)
+
+        # Create a frame to hold the buttons horizontally
+        button_frame = tb.Frame(top)
+        button_frame.pack()
+
+        # Add buttons for exporting to Word Doc and PDF
+        word_doc_button = tb.Button(button_frame, text="Word Doc", command=lambda: on_button_click("Word Doc"))
+        word_doc_button.pack(side='left', padx=5, pady=5)
+
+        pdf_button = tb.Button(button_frame, text="PDF", command=lambda: on_button_click("PDF"))
+        pdf_button.pack(side='left', padx=5, pady=5)
+
+        # Add button to set export directory
+        set_directory_button = tb.Button(top, text="Set Export Directory",
+                                         command=lambda: self.set_export_directory(selected_directory_label))
+        set_directory_button.pack(pady=5)
+
+        # Add label to show directory
+        selected_directory_label = tb.Label(top, text=self.path, font=('Helvetica', 12))
+        selected_directory_label.pack(side=tb.BOTTOM)
+
+        # Make the pop-up window modal (prevent interaction with other windows)
+        top.grab_set()
+        # Wait for the pop-up window to be closed before returning
+        top.wait_window()
+
+    def set_export_directory(self, label_widget):
+        # Open a file dialog to select the export directory
+        export_directory = filedialog.askdirectory(initialdir=os.getcwd())
+
+        # Update the label with the selected directory
+        if export_directory:
+            self.path = export_directory
+            label_widget.config(text=self.path)
+            print("Export directory selected:", export_directory)
+        else:
+            print("No export directory selected.")
 
     def is_conversation_empty(self):
         # Get the content of the conversation text widget
@@ -420,9 +496,13 @@ class GUI:
                 return
 
         else:
+            username = self.first_name
             user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
         # Retrieve the conversation from the backend
+        self.export_conversation_name = conversation_name
+        self.export_username = username
+        self.export_user_id = user_id
         conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
         # print(conversation)
         if conversation:

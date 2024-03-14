@@ -2,6 +2,8 @@ import sqlite3
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
+from docx import Document
+from fpdf import FPDF
 import time
 import os
 import datetime
@@ -467,6 +469,23 @@ class Backend:
                      WHERE user_id = ? AND conversation_name = ?''', (user_id, conversation_name))
         conn.commit()
         conn.close()
+
+    def export_conversation(self, format_of_export, conversation_name, username, user_id, path):
+        print("username:", username)
+        print("conversation name:", conversation_name)
+        conversation = self.retrieve_previous_conversation(user_id, conversation_name)
+        formatted_conversation = self.format_conversation(conversation)
+        if format_of_export == 'Word Doc':
+            doc = Document()
+            doc.add_paragraph(formatted_conversation)
+            doc.save(os.path.join(path, f"{username} - {conversation_name}.docx"))
+        elif format_of_export == 'PDF':
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.multi_cell(0, 10, formatted_conversation)
+            pdf.output(os.path.join(path, f"{username} - {conversation_name}.pdf"))
+        return
 
     @staticmethod
     def format_conversation(conversation):
