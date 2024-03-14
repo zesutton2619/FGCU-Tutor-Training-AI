@@ -134,6 +134,7 @@ class GUI:
         self.info_label = None
         self.conversation_text = None
         self.export_conversation_name = None
+        self.export_conversation = None
         self.export_username = None
         self.export_user_id = None
         self.start_conversation_button_text = None
@@ -346,14 +347,14 @@ class GUI:
         print("Conversation cleared. You can start a new conversation now.")
 
     def export(self):
+        if self.export_username is None or self.export_conversation_name is None:
+            messagebox.showerror("Error", "Must select previous conversation to export")
+            return
+
         def on_button_click(export_format):
             # Call the backend function to export the conversation
-            if self.export_username is None or self.export_conversation_name is None:
-                messagebox.showerror("Error", "Must select previous conversation to export")
-                return
-            else:
-                self.backend.export_conversation(export_format, self.export_conversation_name, self.export_username,
-                                                 self.export_user_id, self.path)
+            self.backend.export_conversation(export_format, self.export_conversation_name, self.export_username,
+                                             self.export_user_id, self.path)
             # Close the pop-up window
             top.destroy()
 
