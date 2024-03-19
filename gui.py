@@ -119,6 +119,7 @@ class StartFrame:
 
 class GUI:
     def __init__(self, root):
+        self.conversation_frame_inner = None
         self.conversation_frame = None
         self.input_frame = None
         self.tree_frame = None
@@ -170,8 +171,8 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        # self.backend.check_username(first_name)
-        # self.backend.create_conversation_name()  # initialize conversation name
+        self.backend.check_username(first_name)
+        self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -190,14 +191,17 @@ class GUI:
         self.conversation_frame.pack(expand=True, fill=tb.BOTH, side=tb.RIGHT)
 
         # Create conversation display area
-        self.conversation_text = tb.Text(self.conversation_frame, wrap=tb.WORD, state='disabled', height=20, width=100,
-                                         font=('Helvetica', 12))
-        self.conversation_text.pack(expand=True, fill=tb.BOTH, padx=10, pady=5, side=tb.TOP)
+        self.conversation_frame_inner = tb.Frame(self.conversation_frame)
+        self.conversation_frame_inner.pack(expand=True, fill=tb.BOTH)
 
-        # Add a scrollbar to the conversation text widget
-        self.scrollbar = tb.Scrollbar(self.conversation_text, orient=tb.VERTICAL, command=self.conversation_text.yview,
-                                      style='primary-round')
-        self.scrollbar.pack(side=tb.RIGHT, fill=tb.Y)
+        self.conversation_text = tb.Text(self.conversation_frame_inner, wrap=tb.WORD, state='disabled', height=20,
+                                         width=100, font=('Helvetica', 12))
+        self.conversation_text.pack(side=tb.LEFT, fill=tb.BOTH, expand=True)
+
+        self.scrollbar = tb.Scrollbar(self.conversation_frame_inner, orient=tb.VERTICAL,
+                                      command=self.conversation_text.yview, style='primary-round')
+        self.scrollbar.pack(side=tb.RIGHT, fill=tb.Y, padx=5)
+        self.conversation_text.config(yscrollcommand=self.scrollbar.set)
 
         # Create a frame to hold the entry box and button
         self.input_frame = tb.Frame(self.conversation_frame)
@@ -262,7 +266,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        # self.load_previous_conversations()
+        self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
