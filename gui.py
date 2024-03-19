@@ -501,6 +501,8 @@ class GUI:
             username = self.first_name
             user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
+        if conversation_name in ["Tutee Conversations", "Tutor Conversations", "Generated Conversations"]:
+            return
         # Retrieve the conversation from the backend
         self.export_conversation_name = conversation_name
         self.export_username = username
