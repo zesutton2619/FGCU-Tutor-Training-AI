@@ -65,7 +65,7 @@ class StartFrame:
         #                               background='#cdcfcd', foreground='black')
         # self.subject_label.place(relx=0.46, rely=0.6, anchor=tb.CENTER)
         self.selected_mode = 'Select AI mode'
-        self.mode_menu = tb.Menubutton(self.frame, text=f'{self.selected_mode}', direction="below", style='info')
+        self.mode_menu = tb.Menubutton(self.frame, text=f'{self.selected_mode}', direction="below", style='secondary')
         self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
         self.mode_menu.configure(menu=self.mode_menu.menu)
         self.mode_menu.menu.configure(font=('Helvetica', 14))
@@ -76,7 +76,7 @@ class StartFrame:
 
         # Create the Start button
         style.configure('TButton', font=('Helvetica', 14))
-        self.start_button = tb.Button(self.frame, text="Start", command=self.start, width=10, style='success')
+        self.start_button = tb.Button(self.frame, text="Start", command=self.start, width=10, style='primary')
         self.start_button.place(relx=0.5, rely=0.65, anchor=tb.CENTER)
 
     def start(self):
@@ -170,8 +170,8 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        self.backend.check_username(first_name)
-        self.backend.create_conversation_name()  # initialize conversation name
+        # self.backend.check_username(first_name)
+        # self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -201,11 +201,11 @@ class GUI:
 
         # Create a frame to hold the entry box and button
         self.input_frame = tb.Frame(self.conversation_frame)
-        self.input_frame.pack(side=tb.TOP, fill=tb.X, padx=10, pady=10)
+        self.input_frame.pack(side=tb.BOTTOM, fill=tb.X, padx=10, pady=10)
 
         # Add the delete button
         self.delete_button = tb.Button(self.input_frame, text="Delete Conversation", command=self.delete_conversation,
-                                       style='warning')
+                                       style='secondary')
         self.delete_button.pack(side=tb.RIGHT, padx=5)
 
         if self.first_name != 'CAA Staff':
@@ -220,7 +220,7 @@ class GUI:
             else:
                 self.add_message_button_text = 'Enter'
             self.add_message_button = tb.Button(self.input_frame, text=self.add_message_button_text,
-                                                command=self.add_message, style='success')
+                                                command=self.add_message, style='primary')
             self.add_message_button.pack(side=tb.LEFT, padx=(5, 40))
 
             # Configure column widths to make buttons appear to the right
@@ -236,7 +236,7 @@ class GUI:
             else:
                 self.start_conversation_button_text = 'Start Conversation'
             self.start_conversation_button = tb.Button(self.input_frame, text=self.start_conversation_button_text,
-                                                       command=self.start_conversation, style='success')
+                                                       command=self.start_conversation, style='primary')
             self.start_conversation_button.pack(side=tb.RIGHT, padx=(10, 5))
 
         # Create a frame to hold the TreeView
@@ -254,7 +254,7 @@ class GUI:
         self.exit_and_export_frame.pack(side=tb.BOTTOM, fill=tb.X)
 
         # Create the Exit button
-        self.exit_button = tb.Button(self.exit_and_export_frame, text="Exit", command=self.exit, style='danger')
+        self.exit_button = tb.Button(self.exit_and_export_frame, text="Exit", command=self.exit, style='secondary')
         self.exit_button.pack(side=tb.LEFT, anchor='sw', padx=(0, 10), pady=5)
 
         # Create the Export button
@@ -262,7 +262,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        self.load_previous_conversations()
+        # self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
@@ -531,6 +531,6 @@ class GUI:
 
 
 def start_gui():
-    root = tb.Window(themename='darkly')
+    root = tb.Window(themename='fgcu')
     gui = GUI(root)
     root.mainloop()
