@@ -8,7 +8,15 @@ import base64
 
 
 class StartFrame:
+    """ Class representing the initial GUI frame for user input. """
     def __init__(self, parent, on_start):
+        """
+        Initialize the StartFrame object.
+
+        Args:
+            parent: The parent widget.
+            on_start: Callback function to be called when the start button is clicked.
+        """
         self.parent = parent
         self.on_start = on_start
         self.key = os.getenv('KEY')
@@ -80,6 +88,7 @@ class StartFrame:
         self.start_button.place(relx=0.5, rely=0.65, anchor=tb.CENTER)
 
     def start(self):
+        """Handle the start button click event."""
         first_name = self.entry.get()
         if first_name == '':
             messagebox.showerror("Error", "Please enter your first name")
@@ -99,14 +108,35 @@ class StartFrame:
         self.on_start(first_name, self.selected_subject, self.selected_mode)
 
     def set_subject(self, subject):
+        """
+        Set the selected subject.
+
+        Args:
+            subject: The selected subject.
+        """
         self.selected_subject = subject
         self.subject_menu.config(text=subject)
 
     def set_mode(self, mode):
+        """
+        Set the selected mode.
+
+        Args:
+            mode: The selected mode.
+        """
         self.selected_mode = mode
         self.mode_menu.config(text=mode)
 
     def verify_password(self, entered_password):
+        """
+        Verify the entered password.
+
+        Args:
+            entered_password: The password entered by the user.
+
+        Returns:
+            bool: True if the entered password matches the decrypted password, False otherwise.
+        """
         # Create a Fernet cipher with the encryption key
         cipher = Fernet(self.key.encode())
 
@@ -118,12 +148,22 @@ class StartFrame:
 
 
 class GUI:
+    """Class representing the main GUI."""
     def __init__(self, root):
+        """
+        Initialize the GUI object.
+
+        Args:
+            root: The root window.
+        """
+        self.info_frame = None
         self.conversation_frame_inner = None
         self.conversation_frame = None
         self.input_frame = None
         self.tree_frame = None
         self.exit_and_export_frame = None
+        self.mode_menu = None
+        self.subject_menu = None
         self.tree = None
         self.scrollbar = None
         self.add_message_button = None
@@ -145,10 +185,13 @@ class GUI:
         self.first_name = None
         self.subject = None
         self.mode = None
+        self.conversations_by_username = None
+        self.conversations_by_mode = None
         self.path = os.path.join(os.getcwd(), 'Exported Conversations')
         self.root = root
         self.backend = Backend()
         self.previous_conversation_loaded = False
+        self.previous_conversations_loaded = False
         self.started_conversation = False
         self.root.title("FGCU Training AI")
         self.root.iconbitmap('images/icon.ico')
@@ -160,11 +203,20 @@ class GUI:
         self.show_start_frame()
 
     def show_start_frame(self):
+        """Show the start frame."""
         if self.main_frame:
             self.main_frame.pack_forget()  # Hide the main frame if it exists
         self.start_frame = StartFrame(self.root, self.on_start)
 
     def on_start(self, first_name, subject, mode):
+        """
+        Handle the start event.
+
+        Args:
+            first_name: The first name entered by the user.
+            subject: The selected subject.
+            mode: The selected mode.
+        """
         self.first_name = first_name
         self.subject = subject
         self.mode = mode
@@ -178,13 +230,29 @@ class GUI:
         self.show_main_frame()
 
     def show_main_frame(self):
+        """Show the main frame."""
         self.main_frame = tb.Frame(self.root)
         self.main_frame.pack(expand=True, fill=tb.BOTH)
 
-        self.info_label = tb.Label(self.main_frame,
-                                   text=f'Name: {self.first_name}, Subject: {self.subject}, 'f'Mode: {self.mode}',
-                                   font=('Helvetica', 12))
-        self.info_label.pack(side=tb.TOP, fill=tb.X, pady=5, padx=5)
+        # Create a new frame to hold the info_label and mode_menu
+        info_frame = tb.Frame(self.main_frame)
+        info_frame.pack(side=tb.TOP, fill=tb.X, pady=5, padx=5)
+
+        # Create the info_label and pack it to the left side of the info_frame
+        self.info_label = tb.Label(info_frame, text=f'Name: {self.first_name}', font=('Helvetica', 12))
+        self.info_label.pack(side=tb.LEFT)
+
+        # Create the mode_menu and pack it to the right side of the info_frame
+        style = tb.Style()
+        style.configure('TMenubutton', font=('Helvetica', 12), width=20)
+        self.mode_menu = tb.Menubutton(info_frame, text=f'{self.mode}', direction="below", style='secondary')
+        self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
+        self.mode_menu.configure(menu=self.mode_menu.menu)
+        self.mode_menu.menu.configure(font=('Helvetica', 12))
+        modes = ['Tutor', 'Tutee', 'Generate Conversation']
+        for mode in modes:
+            self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.change_mode(m))
+        self.mode_menu.pack(side=tb.LEFT, padx=5)
 
         # Create conversation display area
         self.conversation_frame = tb.Frame(self.main_frame, padding=(10, 10, 0, 10))
@@ -194,8 +262,11 @@ class GUI:
         self.conversation_frame_inner = tb.Frame(self.conversation_frame)
         self.conversation_frame_inner.pack(expand=True, fill=tb.BOTH)
 
-        self.conversation_text = tb.Text(self.conversation_frame_inner, wrap=tb.WORD, state='disabled', height=20,
-                                         width=100, font=('Helvetica', 12))
+        # style = tb.Style()
+        # style.configure('Text', borderwidth=2, relief='solid')
+
+        self.conversation_text = tb.Text(self.conversation_frame_inner, wrap=tb.WORD, state='disabled',
+                                         height=20, width=100, font=('Helvetica', 12))
         self.conversation_text.pack(side=tb.LEFT, fill=tb.BOTH, expand=True)
 
         self.scrollbar = tb.Scrollbar(self.conversation_frame_inner, orient=tb.VERTICAL,
@@ -271,7 +342,16 @@ class GUI:
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
 
+    def change_mode(self, mode):
+        self.mode_menu.configure(text=mode)
+        self.mode = mode
+        self.backend.set_mode(mode)
+        self.main_frame.pack_forget()
+        self.show_main_frame()
+        self.backend.create_conversation_name()
+
     def start_conversation(self):
+        """Start a new conversation."""
         if self.previous_conversation_loaded:
             self.clear_conversation()
         else:
@@ -287,6 +367,7 @@ class GUI:
         self.add_message()
 
     def add_message(self):
+        """Add messages to the conversation."""
         if not self.started_conversation and self.previous_conversation_loaded:
             if self.mode == 'Generate Conversation':
                 messagebox.showwarning('Error', 'You must generate a conversation first')
@@ -317,7 +398,7 @@ class GUI:
                 messagebox.showwarning('Error', 'Enter a message')
                 return
             else:
-                self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n\n")
+                self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n")
                 response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
                 self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
 
@@ -332,6 +413,7 @@ class GUI:
         return 'break'  # move cursor back to first line
 
     def save_conversation(self):
+        """Save the conversation."""
         self.started_conversation = False
         if self.is_conversation_empty():
             messagebox.showwarning('Error', 'Cannot save empty conversation')
@@ -351,6 +433,7 @@ class GUI:
         print("Conversation cleared. You can start a new conversation now.")
 
     def export(self):
+        """Export the conversation."""
         if self.export_username is None or self.export_conversation_name is None:
             messagebox.showerror("Error", "Must select previous conversation to export")
             return
@@ -399,6 +482,12 @@ class GUI:
         top.wait_window()
 
     def set_export_directory(self, label_widget):
+        """
+        Set the export directory.
+
+        Args:
+            label_widget: The label widget to display the selected directory.
+        """
         # Open a file dialog to select the export directory
         export_directory = filedialog.askdirectory(initialdir=os.getcwd())
 
@@ -411,12 +500,19 @@ class GUI:
             print("No export directory selected.")
 
     def is_conversation_empty(self):
+        """
+        Check if the conversation is empty.
+
+        Returns:
+            bool: True if the conversation is empty, False otherwise.
+        """
         # Get the content of the conversation text widget
         conversation_content = self.conversation_text.get("1.0", tb.END).strip()
         # Check if the content is empty
         return not conversation_content
 
     def delete_conversation(self):
+        """Delete the conversation."""
         if not self.is_conversation_empty():
             # Get the selected conversation
             selected_item = self.tree.selection()
@@ -444,15 +540,16 @@ class GUI:
             messagebox.showwarning('Error', 'Cannot delete empty conversation')
 
     def load_previous_conversations(self):
-        self.started_conversation = False
-        self.previous_conversation_loaded = True
+        """Load the previously saved conversations"""
         # Clear existing items in the TreeView
         for item in self.tree.get_children():
             self.tree.delete(item)
 
         if self.first_name == 'CAA Staff':
-            conversations_by_username = self.backend.retrieve_conversations_by_username(self.first_name)
-            for username, data in conversations_by_username.items():
+            if not self.previous_conversations_loaded:
+                print("here 1")
+                self.conversations_by_username = self.backend.retrieve_conversations_by_username(self.first_name)
+            for username, data in self.conversations_by_username.items():
                 user_node = self.tree.insert('', 'end', text=f"{username}'s Conversations")
                 for mode, conversations in data.items():
                     if mode == 'Generate Conversation':
@@ -464,10 +561,11 @@ class GUI:
         else:
             # Retrieve previous conversations from the backend grouped by mode
             user_id = self.backend.get_user_id()
-            conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
-
+            if not self.previous_conversations_loaded:
+                print("here 2")
+                self.conversations_by_mode = self.backend.retrieve_conversations_by_mode(user_id)
             # Insert mode folders and conversations into the TreeView
-            for mode, conversations in conversations_by_mode.items():
+            for mode, conversations in self.conversations_by_mode.items():
                 if mode == 'Generate Conversation':
                     mode_item = self.tree.insert('', 'end', text="Generated Conversations")
                 else:
@@ -478,8 +576,10 @@ class GUI:
         self.tree.tag_configure('big_font', font=('Helvetica', 10))
         for item in self.tree.get_children():
             self.tree.item(item, tags=('big_font',))
+        self.previous_conversations_loaded = True
 
     def load_selected_conversation(self, event):
+        """Load the selected conversation"""
         self.previous_conversation_loaded = True
         # Get the selected item from the TreeView
         selected_item = self.tree.selection()
@@ -506,6 +606,7 @@ class GUI:
             user_id = self.backend.get_user_id()
         print("conversation name", conversation_name)
         if conversation_name in ["Tutee Conversations", "Tutor Conversations", "Generated Conversations"]:
+            print("returned")
             return
         # Retrieve the conversation from the backend
         self.export_conversation_name = conversation_name
@@ -524,17 +625,20 @@ class GUI:
             self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
     def clear_conversation(self):
+        """Clear the conversation."""
         # Clear the conversation display area
         self.conversation_text.config(state='normal')  # Set state too normal to allow editing
         self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
         self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
     def exit(self):
+        """Exit the program and show the Start Frame"""
         self.clear_conversation()
         self.show_start_frame()
 
 
 def start_gui():
+    """Start the GUI."""
     root = tb.Window(themename='fgcu')
     gui = GUI(root)
     root.mainloop()
