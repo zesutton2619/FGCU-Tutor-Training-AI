@@ -279,9 +279,9 @@ class Backend:
         elif self.global_mode == 'Tutee':
             assistant_id = self.tutee_assistant_ids[self.global_subject]
         elif self.global_mode == 'Tutor':
-            assistant_id = 'asst_8beVxeg82dDaJ1jUaP8tDy4n'
+            assistant_id = 'asst_IPJi4k5UXGPNkHZ5nTSjnZ5S'
         else:
-            assistant_id = 'asst_8beVxeg82dDaJ1jUaP8tDy4n'
+            assistant_id = 'asst_IPJi4k5UXGPNkHZ5nTSjnZ5S'
         print("Generate Conversation Mode:", self.generate_conversation_mode, "Assistant:", assistant_id)
         assistant = self.client.beta.assistants.retrieve(f"{assistant_id}")
 

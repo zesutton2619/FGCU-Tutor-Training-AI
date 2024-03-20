@@ -262,9 +262,6 @@ class GUI:
         self.conversation_frame_inner = tb.Frame(self.conversation_frame)
         self.conversation_frame_inner.pack(expand=True, fill=tb.BOTH)
 
-        # style = tb.Style()
-        # style.configure('Text', borderwidth=2, relief='solid')
-
         self.conversation_text = tb.Text(self.conversation_frame_inner, wrap=tb.WORD, state='disabled',
                                          height=20, width=100, font=('Helvetica', 12))
         self.conversation_text.pack(side=tb.LEFT, fill=tb.BOTH, expand=True)
@@ -343,6 +340,9 @@ class GUI:
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
 
     def change_mode(self, mode):
+        if self.started_conversation:
+            messagebox.showerror('Error', 'Cant\'t change modes')
+            return
         self.mode_menu.configure(text=mode)
         self.mode = mode
         self.backend.set_mode(mode)
@@ -415,6 +415,7 @@ class GUI:
     def save_conversation(self):
         """Save the conversation."""
         self.started_conversation = False
+        self.previous_conversations_loaded = False
         if self.is_conversation_empty():
             messagebox.showwarning('Error', 'Cannot save empty conversation')
             return
@@ -541,6 +542,8 @@ class GUI:
 
     def load_previous_conversations(self):
         """Load the previously saved conversations"""
+        self.started_conversation = False
+        self.previous_conversation_loaded = True
         # Clear existing items in the TreeView
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -604,7 +607,7 @@ class GUI:
         else:
             username = self.first_name
             user_id = self.backend.get_user_id()
-        print("conversation name", conversation_name)
+        print("conversation name from tree", conversation_name)
         if conversation_name in ["Tutee Conversations", "Tutor Conversations", "Generated Conversations"]:
             print("returned")
             return
