@@ -1,4 +1,5 @@
 import os
+import io
 import ttkbootstrap as tb
 from tkinter import messagebox, simpledialog, filedialog
 from backend import Backend
@@ -9,6 +10,7 @@ import base64
 
 class StartFrame:
     """ Class representing the initial GUI frame for user input. """
+
     def __init__(self, parent, on_start):
         """
         Initialize the StartFrame object.
@@ -38,7 +40,7 @@ class StartFrame:
         self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
         # Create a label for the name of the program text with the same background color
-        self.start_label = tb.Label(self.frame, text='FGCU Tutor Training AI', font=('Helvetica', 18),
+        self.start_label = tb.Label(self.frame, text='FGCU TutorTech', font=('Helvetica', 18),
                                     background='#cdcfcd', foreground='black')
         self.start_label.place(relx=0.5, rely=0.45, anchor=tb.CENTER)
 
@@ -172,6 +174,7 @@ class GUI:
         self.save_button = None
         self.delete_button = None
         self.start_conversation_button = None
+        self.view_data_analysis_button = None
         self.info_label = None
         self.conversation_text = None
         self.export_conversation_name = None
@@ -193,7 +196,7 @@ class GUI:
         self.previous_conversation_loaded = False
         self.previous_conversations_loaded = False
         self.started_conversation = False
-        self.root.title("FGCU Training AI")
+        self.root.title("FGCU TutorTech")
         self.root.iconbitmap('images/icon.ico')
         self.root.state('zoomed')
 
@@ -223,8 +226,9 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        self.backend.check_username(first_name)
-        self.backend.create_conversation_name()  # initialize conversation name
+        # TODO self.backend.check_username(first_name)
+        self.backend.set_username(first_name)
+        # TODO self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -235,17 +239,17 @@ class GUI:
         self.main_frame.pack(expand=True, fill=tb.BOTH)
 
         # Create a new frame to hold the info_label and mode_menu
-        info_frame = tb.Frame(self.main_frame)
-        info_frame.pack(side=tb.TOP, fill=tb.X, pady=5, padx=5)
+        self.info_frame = tb.Frame(self.main_frame)
+        self.info_frame.pack(side=tb.TOP, fill=tb.X, pady=5, padx=5)
 
         # Create the info_label and pack it to the left side of the info_frame
-        self.info_label = tb.Label(info_frame, text=f'Name: {self.first_name}', font=('Helvetica', 12))
+        self.info_label = tb.Label(self.info_frame, text=f'Name: {self.first_name}', font=('Helvetica', 12))
         self.info_label.pack(side=tb.LEFT)
 
-        # Create the mode_menu and pack it to the right side of the info_frame
+        # Create the mode_menu and pack it to the right of the info label
         style = tb.Style()
         style.configure('TMenubutton', font=('Helvetica', 12), width=20)
-        self.mode_menu = tb.Menubutton(info_frame, text=f'{self.mode}', direction="below", style='secondary')
+        self.mode_menu = tb.Menubutton(self.info_frame, text=f'{self.mode}', direction="below", style='secondary')
         self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
         self.mode_menu.configure(menu=self.mode_menu.menu)
         self.mode_menu.menu.configure(font=('Helvetica', 12))
@@ -253,6 +257,12 @@ class GUI:
         for mode in modes:
             self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.change_mode(m))
         self.mode_menu.pack(side=tb.LEFT, padx=5)
+
+        if self.first_name == 'CAA Staff':
+            self.view_data_analysis_button = tb.Button(self.info_frame, text='View Data Analysis',
+                                                       command=self.view_data_analysis,
+                                                       style='secondary')
+            self.view_data_analysis_button.pack(side=tb.RIGHT, padx=5)
 
         # Create conversation display area
         self.conversation_frame = tb.Frame(self.main_frame, padding=(10, 10, 0, 10))
@@ -334,7 +344,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        self.load_previous_conversations()
+        # TODO self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
@@ -349,6 +359,58 @@ class GUI:
         self.main_frame.pack_forget()
         self.show_main_frame()
         self.backend.create_conversation_name()
+
+    def view_data_analysis(self):
+        # Call the method to generate the plot and save it
+        self.backend.view_conversations_per_mode()
+
+        # Create a new pop-up window
+        top = tb.Toplevel()
+        top.title("Data Analysis")
+        top.state('zoomed')
+
+        # Set minimum size for the window
+        top.minsize(640, 480)
+
+        # Load the encrypted plot image
+        encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams',
+                                                 'total_conversations_per_mode_plot.enc')
+        if os.path.exists(encrypted_plot_image_path):
+            # Decrypt the image
+            with open(encrypted_plot_image_path, 'rb') as file:
+                encrypted_image_data = file.read()
+            decrypted_image_data = self.backend.decrypt_data(encrypted_image_data)
+
+            if decrypted_image_data:
+                try:
+                    # Load the decrypted image directly into memory
+                    image_stream = io.BytesIO(decrypted_image_data)
+                    plot_image = Image.open(image_stream)
+
+                    # Display the image using Tkinter
+                    plot_image_tk = ImageTk.PhotoImage(plot_image)
+                    label = tb.Label(top, image=plot_image_tk)
+                    label.image = plot_image_tk
+                    label.pack()
+                except Exception as e:
+                    # If an error occurs during image loading or decryption, show an error message
+                    error_label = tb.Label(top, text=f"Error: {str(e)}")
+                    print(str(e))
+                    error_label.pack()
+            else:
+                # If decryption fails, show an error message
+                error_label = tb.Label(top, text="Error: Failed to decrypt the image!")
+                error_label.pack()
+        else:
+            # If the encrypted plot image doesn't exist, show an error message
+            error_label = tb.Label(top, text="Error: Encrypted plot image not found!")
+            error_label.pack()
+
+        # Make the pop-up window modal (prevent interaction with other windows)
+        top.grab_set()
+
+        # Wait for the pop-up window to be closed before returning
+        top.wait_window()
 
     def start_conversation(self):
         """Start a new conversation."""
@@ -636,6 +698,7 @@ class GUI:
 
     def exit(self):
         """Exit the program and show the Start Frame"""
+        self.previous_conversations_loaded = False
         self.clear_conversation()
         self.show_start_frame()
 

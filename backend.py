@@ -1,7 +1,7 @@
 import boto3
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.conditions import Attr
-
+from cryptography.fernet import Fernet
 from openai import OpenAI
 from dotenv import load_dotenv
 from docx import Document
@@ -10,6 +10,7 @@ import time
 import os
 import datetime
 import random
+import matplotlib.pyplot as plt
 
 load_dotenv()
 
@@ -57,13 +58,28 @@ class Backend:
         self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         self.conversations_table = self.dynamodb.Table('Conversations')
         self.user_id_table = self.dynamodb.Table('User_ID')
-        # self.db_path = os.getenv("SQLITE_DB_PATH")  # Path to SQLite database file
+        self.caa_key = os.environ.get("KEY")
+        self.fernet = Fernet(self.caa_key)
+        self.diagram_directory = ''
         self.global_conversation_name = ''
         self.global_user_id = 0
         self.global_subject = ''
         self.global_mode = ''
+        self.global_username = ''
         self.thread_exists = False
         self.generate_conversation_mode = ''
+        # TODO self.conversations_by_username = {}
+        self.conversations_by_username = \
+            {'Zach': {'Generate Conversation': ['Math Generated Conversation 4', 'Math Generated Conversation 3',
+                                                'Math Generated Conversation 1', 'Math Generated Conversation 2'],
+                      'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+                                'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+                      'Tutor': ['Math Tutor Conversation 1']},
+             'Test': {'Generate Conversation': ['Math Generated Conversation 1'],
+                      'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+                                'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+                      'Tutor': ['Math Tutor Conversation 1']
+                      }}
         self.tutee_assistant_ids = {
             'Writing': 'asst_xqPTYqajw69DTFS2yidhYVBJ',
             'Chemistry': 'asst_M2fmEombFqQpmZHUmUBgkfVJ',
@@ -111,9 +127,11 @@ class Backend:
 
         for item in response['Items']:
             conversation_name = item['conversation_name']
-            if conversation_name and (conversation_name.startswith(
-                    f"{self.global_subject} {self.global_mode} Conversation ") or (conversation_name.startswith(
-                    f"{self.global_subject} Generated Conversation ")) and self.global_mode == 'Generate Conversation'):
+            if (conversation_name and
+                    (conversation_name.startswith(f"{self.global_subject} {self.global_mode} Conversation ") or
+                     (conversation_name.startswith(
+                    f"{self.global_subject} Generated Conversation "))
+                     and self.global_mode == 'Generate Conversation')):
                 conversation_number = int(conversation_name.split(" ")[-1])
                 max_conversation_number = max(max_conversation_number, conversation_number)
 
@@ -204,6 +222,9 @@ class Backend:
                 mode (str): Mode ('Tutee', 'Tutor', 'Generate Conversation').
         """
         self.global_mode = mode
+
+    def set_username(self, username):
+        self.global_username = username
 
     def check_if_thread_exists(self, user_id, conversation_name):
         """
@@ -357,6 +378,8 @@ class Backend:
                 conversations_by_mode[mode] = []
             conversations_by_mode[mode].append(conversation_name)
 
+        print("Conversations by mode: ", conversations_by_mode)
+
         return conversations_by_mode
 
     def retrieve_conversations_by_username(self, username):
@@ -372,20 +395,20 @@ class Backend:
         fe = "username <> :username"
         response = self.conversations_table.scan(FilterExpression=fe, ExpressionAttributeValues={":username": username})
 
-        conversations_by_username = {}
+        self.conversations_by_username = {}
         for item in response['Items']:
             username = item['username']
             mode = item['mode']
             conversation_name = item['conversation_name']
 
-            if username not in conversations_by_username:
-                conversations_by_username[username] = {}
-            if mode not in conversations_by_username[username]:
-                conversations_by_username[username][mode] = []
-            conversations_by_username[username][mode].append(conversation_name)
+            if username not in self.conversations_by_username:
+                self.conversations_by_username[username] = {}
+            if mode not in self.conversations_by_username[username]:
+                self.conversations_by_username[username][mode] = []
+            self.conversations_by_username[username][mode].append(conversation_name)
 
-        print(conversations_by_username)
-        return conversations_by_username
+        print("Conversations by username: ", self.conversations_by_username)
+        return self.conversations_by_username
 
     def retrieve_previous_conversation(self, user_id, conversation_name):
         """
@@ -448,6 +471,66 @@ class Backend:
             pdf.multi_cell(0, 10, formatted_conversation)
             pdf.output(os.path.join(path, f"{username} - {conversation_name}.pdf"))
         return
+
+    def encrypt_data(self, data):
+        return self.fernet.encrypt(data)
+
+    def decrypt_data(self, encrypted_data):
+        try:
+            print("Attempting to decrypt data...")
+            decrypted_data = self.fernet.decrypt(encrypted_data)
+            print("Data decrypted successfully.")
+            return decrypted_data
+        except Exception as e:
+            print("Error decrypting data:", str(e))
+            return None
+
+    def view_conversations_per_mode(self):
+        print("view data here")
+
+        modes = ["Generate Conversation", "Tutor", "Tutee"]
+        mode_counts = {mode: 0 for mode in modes}  # Initialize mode_counts with zeros
+        usernames = list(self.conversations_by_username.keys())
+        print("usernames: ", usernames)
+        for username in usernames:
+            for mode in modes:
+                # Check if the mode exists for the current user
+                if mode in self.conversations_by_username[username]:
+                    # If the mode exists, add its count to mode_counts
+                    mode_counts[mode] += len(self.conversations_by_username[username][mode])
+
+        # Plotting
+        plt.bar(list(mode_counts.keys()), list(mode_counts.values()), color='skyblue')
+        plt.xlabel('Mode')
+        plt.ylabel('Number of Conversations')
+        plt.title('Total Number of Conversations per Mode')
+        plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
+
+        plt.tight_layout()  # Adjust layout to prevent overlap of labels
+
+        # Create directory if it doesn't exist
+        self.diagram_directory = os.path.join(os.getcwd(), f"{self.global_username} Diagrams")
+        if not os.path.exists(self.diagram_directory):
+            os.makedirs(self.diagram_directory)
+
+        # Save the plot as an image file
+        plot_filename = os.path.join(self.diagram_directory, 'total_conversations_per_mode_plot.png')
+        plt.savefig(plot_filename)
+
+        # Encrypt the image file's contents
+        with open(plot_filename, 'rb') as file:
+            image_data = file.read()
+        encrypted_image_data = self.encrypt_data(image_data)
+
+        # Write the encrypted data to a file
+        encrypted_plot_filename = os.path.join(self.diagram_directory, 'total_conversations_per_mode_plot.enc')
+        with open(encrypted_plot_filename, 'wb') as file:
+            file.write(encrypted_image_data)
+
+        os.remove(plot_filename)
+
+        # Show the plot
+        plt.show()
 
     @staticmethod
     def format_conversation(conversation):
