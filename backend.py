@@ -11,6 +11,7 @@ import os
 import datetime
 import random
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 load_dotenv()
 
@@ -68,18 +69,18 @@ class Backend:
         self.global_username = ''
         self.thread_exists = False
         self.generate_conversation_mode = ''
-        # TODO self.conversations_by_username = {}
-        self.conversations_by_username = \
-            {'Zach': {'Generate Conversation': ['Math Generated Conversation 4', 'Math Generated Conversation 3',
-                                                'Math Generated Conversation 1', 'Math Generated Conversation 2'],
-                      'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
-                                'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
-                      'Tutor': ['Math Tutor Conversation 1']},
-             'Test': {'Generate Conversation': ['Math Generated Conversation 1'],
-                      'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
-                                'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
-                      'Tutor': ['Math Tutor Conversation 1']
-                      }}
+        self.conversations_by_username = {}
+        # self.conversations_by_username = \
+        #     {'Zach': {'Generate Conversation': ['Math Generated Conversation 4', 'Math Generated Conversation 3',
+        #                                         'Math Generated Conversation 1', 'Math Generated Conversation 2'],
+        #               'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+        #                         'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+        #               'Tutor': ['Math Tutor Conversation 1']},
+        #      'Test': {'Generate Conversation': ['Math Generated Conversation 1'],
+        #               'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+        #                         'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+        #               'Tutor': ['Math Tutor Conversation 1']
+        #               }}
         self.tutee_assistant_ids = {
             'Writing': 'asst_xqPTYqajw69DTFS2yidhYVBJ',
             'Chemistry': 'asst_M2fmEombFqQpmZHUmUBgkfVJ',
@@ -485,7 +486,7 @@ class Backend:
             print("Error decrypting data:", str(e))
             return None
 
-    def view_conversations_per_mode(self):
+    def make_total_conversations_per_mode(self):
         print("view data here")
 
         modes = ["Generate Conversation", "Tutor", "Tutee"]
@@ -505,7 +506,7 @@ class Backend:
         plt.ylabel('Number of Conversations')
         plt.title('Total Number of Conversations per Mode')
         plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
-
+        plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.tight_layout()  # Adjust layout to prevent overlap of labels
 
         # Create directory if it doesn't exist
@@ -530,6 +531,90 @@ class Backend:
         os.remove(plot_filename)
 
         # Show the plot
+        plt.show()
+
+    def make_total_conversations_by_mode(self, mode):
+        total_conversations_per_user = {}
+
+        # Iterate over each user
+        for username, conversations in self.conversations_by_username.items():
+            total_conversations = 0
+            # Check if the mode exists for the user
+            if mode in conversations:
+                total_conversations = len(conversations[mode])
+            total_conversations_per_user[username] = total_conversations
+        # Plotting
+        plt.bar(list(total_conversations_per_user.keys()), list(total_conversations_per_user.values()), color='skyblue')
+        plt.xlabel('Username')
+        plt.ylabel('Total Conversations')
+        plt.title(f'Total Number of {mode} Conversations per Tutor')
+
+        plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
+        plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.tight_layout()  # Adjust layout to prevent overlap of labels
+
+        # Create directory if it doesn't exist
+        self.diagram_directory = os.path.join(os.getcwd(), f"{self.global_username} Diagrams")
+        if not os.path.exists(self.diagram_directory):
+            os.makedirs(self.diagram_directory)
+
+        # Save the plot as an image file
+        plot_filename = os.path.join(self.diagram_directory, f'tutors_total_conversations_by_{mode}_plot.png')
+        plt.savefig(plot_filename)
+
+        # Encrypt the image file's contents
+        with open(plot_filename, 'rb') as file:
+            image_data = file.read()
+        encrypted_image_data = self.encrypt_data(image_data)
+
+        # Write the encrypted data to a file
+        encrypted_plot_filename = os.path.join(self.diagram_directory, f'tutors_total_conversations_by_{mode}_plot.enc')
+        with open(encrypted_plot_filename, 'wb') as file:
+            file.write(encrypted_image_data)
+
+        os.remove(plot_filename)
+
+        plt.show()
+
+    def make_total_conversations_by_tutor(self, user):
+        if user not in self.conversations_by_username:
+            print(f"Error: User '{user}' not found in the conversations data.")
+            return
+
+        user_data = self.conversations_by_username[user]
+        modes = list(user_data.keys())
+        mode_counts = [len(user_data[mode]) for mode in modes]
+
+        # Plotting
+        plt.bar(modes, mode_counts, color='skyblue')
+        plt.xlabel('Mode')
+        plt.ylabel('Number of Conversations')
+        plt.title(f'Total Number of Conversations by Tutor: {user}')
+        plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
+        plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.tight_layout()  # Adjust layout to prevent overlap of labels
+
+        # Create directory if it doesn't exist
+        self.diagram_directory = os.path.join(os.getcwd(), f"{self.global_username} Diagrams")
+        if not os.path.exists(self.diagram_directory):
+            os.makedirs(self.diagram_directory)
+
+        # Save the plot as an image file
+        plot_filename = os.path.join(self.diagram_directory, f'{user}_total_conversations_plot.png')
+        plt.savefig(plot_filename)
+
+        # Encrypt the image file's contents
+        with open(plot_filename, 'rb') as file:
+            image_data = file.read()
+        encrypted_image_data = self.encrypt_data(image_data)
+
+        # Write the encrypted data to a file
+        encrypted_plot_filename = os.path.join(self.diagram_directory, f'{user}_total_conversations_plot.enc')
+        with open(encrypted_plot_filename, 'wb') as file:
+            file.write(encrypted_image_data)
+
+        os.remove(plot_filename)
+
         plt.show()
 
     @staticmethod
