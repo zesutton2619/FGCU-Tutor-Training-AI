@@ -52,36 +52,36 @@ class DataAnalysisMenu:
         # Controls frame
         self.total_button = tb.Button(self.controls_frame, text="Total Conversations",
                                       command=self.view_total_conversations)
-        self.total_button.pack(side=tb.LEFT, padx=5, pady=5)
+        self.total_button.grid(row=0, column=0, padx=(50, 0), pady=5)
 
-        self.mode_menu = tb.Menubutton(self.controls_frame, text='Select Mode', direction="below", style='secondary')
+        self.mode_menu = tb.Menubutton(self.controls_frame, text='Select Mode', direction="above", style='secondary')
         self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
         self.mode_menu.configure(menu=self.mode_menu.menu)
         self.mode_menu.menu.configure(font=('Helvetica', 12))
         modes = ['Tutor', 'Tutee', 'Generate Conversation']
         for mode in modes:
             self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.select_mode(m))
-        self.mode_menu.pack(side=tb.LEFT, padx=5)
+        self.mode_menu.grid(row=0, column=1, padx=10, pady=5)
 
-        self.totals_by_mode_button = tb.Button(self.controls_frame, text="Plot Totals by Mode",
-                                               command=self.view_total_conversations_by_mode)
-        self.totals_by_mode_button.pack(side=tb.LEFT, padx=5)
-
-        self.tutor_menu = tb.Menubutton(self.controls_frame, text='Select Tutor', direction="below", style='secondary')
+        self.tutor_menu = tb.Menubutton(self.controls_frame, text='Select Tutor', direction="above", style='secondary')
         self.tutor_menu.menu = tb.Menu(self.tutor_menu, tearoff=False)
         self.tutor_menu.configure(menu=self.tutor_menu.menu)
         self.tutor_menu.menu.configure(font=('Helvetica', 12))
         for tutor in self.tutor_names:
             self.tutor_menu.menu.add_command(label=tutor, command=lambda t=tutor: self.select_tutor(t))
-        self.tutor_menu.pack(side=tb.LEFT, padx=5)
+        self.tutor_menu.grid(row=0, column=2, padx=10, pady=5)
+
+        self.totals_by_mode_button = tb.Button(self.controls_frame, text="Plot Totals by Mode",
+                                               command=self.view_total_conversations_by_mode)
+        self.totals_by_mode_button.grid(row=1, column=1, padx=10, pady=(0, 20))
 
         self.totals_by_tutor_button = tb.Button(self.controls_frame, text="Plot Totals by Tutor",
                                                 command=self.view_total_conversations_by_tutor)
-        self.totals_by_tutor_button.pack(side=tb.LEFT, padx=5)
+        self.totals_by_tutor_button.grid(row=1, column=2, padx=10, pady=(0, 20))
 
         self.export_to_excel_button = tb.Button(self.controls_frame, text="Export To Excel",
                                                 command=self.export_to_excel)
-        self.export_to_excel_button.pack(side=tb.LEFT, padx=5)
+        self.export_to_excel_button.grid(row=0, column=3, padx=10)
 
         # Make the pop-up window modal (prevent interaction with other windows)
         self.top.grab_set()
@@ -104,9 +104,19 @@ class DataAnalysisMenu:
         self.plot_diagram(encrypted_plot_image_path)
 
     def view_total_conversations_by_mode(self):
+        # Call the backend method to generate the plot
         self.backend.make_total_conversations_by_mode_per_tutor(self.selected_mode)
-        encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams',
-                                                 f'total_number_of_{self.selected_mode}_conversations_per_tutor_plot.enc')
+
+        # Construct the filename based on the selected mode
+        if self.selected_mode == "Generate Conversation":
+            filename = f'total_number_of_generate_conversation_conversations_per_tutor_plot.enc'
+        else:
+            filename = f'total_number_of_{self.selected_mode}_conversations_per_tutor_plot.enc'
+
+        # Construct the full path to the encrypted plot image
+        encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams', filename)
+
+        # Display the plot
         self.plot_diagram(encrypted_plot_image_path)
 
     def view_total_conversations_by_tutor(self):

@@ -227,9 +227,9 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        # TODO self.backend.check_username(first_name)
+        self.backend.check_username(first_name)
         self.backend.set_username(first_name)
-        # TODO self.backend.create_conversation_name()  # initialize conversation name
+        self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -345,7 +345,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        # TODO self.load_previous_conversations()
+        self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
