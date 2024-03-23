@@ -1,4 +1,5 @@
 import ttkbootstrap as tb
+from tkinter import messagebox
 import os
 import io
 from PIL import Image, ImageTk
@@ -104,6 +105,9 @@ class DataAnalysisMenu:
         self.plot_diagram(encrypted_plot_image_path)
 
     def view_total_conversations_by_mode(self):
+        if self.selected_mode is None:
+            messagebox.showerror("Error", "Must select mode")
+            return
         # Call the backend method to generate the plot
         self.backend.make_total_conversations_by_mode_per_tutor(self.selected_mode)
 
@@ -120,9 +124,13 @@ class DataAnalysisMenu:
         self.plot_diagram(encrypted_plot_image_path)
 
     def view_total_conversations_by_tutor(self):
+        if self.selected_tutor is None:
+            messagebox.showerror("Error", "Must select tutor")
+            return
         self.backend.make_total_conversations_by_tutor(self.selected_tutor)
         encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams',
-                                                 f'total_number_of_conversations_by_tutor_{self.selected_tutor}_plot.enc')
+                                                 f'total_number_of_conversations_by_tutor_'
+                                                 f'{self.selected_tutor}_plot.enc')
         self.plot_diagram(encrypted_plot_image_path)
 
     def plot_diagram(self, encrypted_path):

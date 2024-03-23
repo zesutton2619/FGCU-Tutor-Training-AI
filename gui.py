@@ -176,6 +176,7 @@ class GUI:
         self.delete_button = None
         self.start_conversation_button = None
         self.view_data_analysis_button = None
+        self.evaluate_button = None
         self.info_label = None
         self.conversation_text = None
         self.export_conversation_name = None
@@ -191,6 +192,7 @@ class GUI:
         self.mode = None
         self.conversations_by_username = None
         self.conversations_by_mode = None
+        self.formatted_conversation = None
         self.path = os.path.join(os.getcwd(), 'Exported Conversations')
         self.root = root
         self.backend = Backend()
@@ -261,9 +263,11 @@ class GUI:
 
         if self.first_name == 'CAA Staff':
             self.view_data_analysis_button = tb.Button(self.info_frame, text='View Data Analysis',
-                                                       command=self.data_analysis_menu,
-                                                       style='secondary')
+                                                       command=self.data_analysis_menu, style='secondary')
             self.view_data_analysis_button.pack(side=tb.RIGHT, padx=5)
+
+            self.evaluate_button = tb.Button(self.info_frame, text='Evaluate Conversation', command=self.evaluate)
+            self.evaluate_button.pack(side=tb.RIGHT, padx=5)
 
         # Create conversation display area
         self.conversation_frame = tb.Frame(self.main_frame, padding=(10, 10, 0, 10))
@@ -360,6 +364,21 @@ class GUI:
         self.main_frame.pack_forget()
         self.show_main_frame()
         self.backend.create_conversation_name()
+
+    def evaluate(self):
+        if self.previous_conversation_loaded:
+            self.backend.set_evaluate_conversation(True)
+            response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
+                                                      self.export_username, self.export_conversation_name)
+            self.conversation_text.config(state='normal')  # Set state too normal to allow editing
+            self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
+            self.conversation_text.insert(tb.END, response)  # Insert selected conversation
+            self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
+            self.backend.set_evaluate_conversation(False)
+        else:
+            messagebox.showerror("Error", "Must select previous conversation to evaluate")
+        # if not self.previous_conversation_loaded:
+        #     return
 
     def data_analysis_menu(self):
         # Create Data Analysis Menu
@@ -635,12 +654,12 @@ class GUI:
         conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
         if conversation:
             # Format the conversation for display
-            formatted_conversation = self.backend.format_conversation(conversation)
+            self.formatted_conversation = self.backend.format_conversation(conversation)
             print("formatting done")
             # Display the selected conversation in the conversation text widget
             self.conversation_text.config(state='normal')  # Set state too normal to allow editing
             self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
-            self.conversation_text.insert(tb.END, formatted_conversation)  # Insert selected conversation
+            self.conversation_text.insert(tb.END, self.formatted_conversation)  # Insert selected conversation
             self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
 
     def clear_conversation(self):
