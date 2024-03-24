@@ -6,6 +6,7 @@ from data_analysis_menu import DataAnalysisMenu
 from PIL import Image, ImageTk
 from cryptography.fernet import Fernet
 import base64
+import re
 
 
 class StartFrame:
@@ -92,19 +93,20 @@ class StartFrame:
     def start(self):
         """Handle the start button click event."""
         first_name = self.entry.get()
-        if first_name == '':
-            messagebox.showerror("Error", "Please enter your first name")
-            return
-        elif first_name == 'CAA Staff':
+        if first_name == 'CAA Staff':
             password = simpledialog.askstring("Enter Password", "Please enter your password:", show='*',
                                               parent=self.frame)
             if not self.verify_password(password):
                 messagebox.showerror("Error", "Incorrect Password")
                 return
-        if self.selected_mode not in ['Tutor', 'Tutee', 'Generate Conversation']:
+        elif first_name == '':
+            messagebox.showerror("Error", "Please enter your first name")
+            return
+        if self.selected_mode not in ['Tutor', 'Tutee', 'Generate Conversation'] and first_name != 'CAA Staff':
             messagebox.showerror("Error", "Please select mode")
             return
-        if self.selected_subject not in ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]:
+        if (self.selected_subject not in ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]
+                and first_name != 'CAA Staff'):
             messagebox.showerror("Error", "Please select subject")
             return
         self.on_start(first_name, self.selected_subject, self.selected_mode)
@@ -176,6 +178,7 @@ class GUI:
         self.delete_button = None
         self.start_conversation_button = None
         self.view_data_analysis_button = None
+        self.evaluate_button = None
         self.info_label = None
         self.conversation_text = None
         self.export_conversation_name = None
@@ -366,19 +369,43 @@ class GUI:
         self.backend.create_conversation_name()
 
     def evaluate(self):
-        if self.previous_conversation_loaded:
+        print("Previous Conversation Loaded: ", self.previous_conversation_loaded)
+        if self.data_menu is None:
+            messagebox.showerror("Error", "Must have Data Analysis Menu open")
+            return
+        elif not self.previous_conversation_loaded:
+            messagebox.showerror("Error", "Must select previous conversation to evaluate")
+            return
+        else:
             self.backend.set_evaluate_conversation(True)
-            response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
+            api_response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
                                                       self.export_username, self.export_conversation_name)
-            self.data_menu.evaluation_text.config(state='normal')  # Set state too normal to allow editing
+#             api_response = """To Zach: 1. Positives:
+#    - The tutor guided the tutee in setting up the equation correctly by using the formula distance = speed x time.
+#    - The tutor confirmed the tutee's answer after the calculation.
+#
+# 2. Suggestions for Improvement:
+#    - The tutor could have asked the tutee to provide an explanation of how they arrived at the final answer to ensure their understanding of the concept.
+#    - It would have been beneficial for the tutee's learning if the tutor had prompted the tutee to solve similar problems or provide more practice questions to reinforce the concept.
+#
+# 3. Confidence: 95%
+#             """
+            # Extracting confidence percentage using regular expression
+            confidence_percentage = re.search(r'Confidence\D+(\d+)%', api_response)
+            if confidence_percentage:
+                confidence = int(confidence_percentage.group(1))
+                # Update meter widget with confidence percentage
+                self.data_menu.confidence_meter.configure(amountused=confidence)
+
+            # Removing all numbering except "1." and "2."
+            response = re.sub(r'\b(?!1\.|2\.)\d+\.', '', api_response)
+            response = re.sub(r'Confidence\D+\d+%', '', response)
+
+            self.data_menu.evaluation_text.config(state='normal')  # Set state to normal to allow editing
             self.data_menu.evaluation_text.delete(1.0, tb.END)  # Clear existing conversation
             self.data_menu.evaluation_text.insert(tb.END, response)  # Insert selected conversation
             self.data_menu.evaluation_text.config(state='disabled')  # Set state to disabled to disable editing
             self.backend.set_evaluate_conversation(False)
-        else:
-            messagebox.showerror("Error", "Must select previous conversation to evaluate")
-        if not self.previous_conversation_loaded:
-            return
 
     def data_analysis_menu(self):
         # Create Data Analysis Menu
@@ -390,14 +417,12 @@ class GUI:
     def start_conversation(self):
         """Start a new conversation."""
         if self.previous_conversation_loaded:
-            self.clear_conversation()
-        else:
             yesno = messagebox.askyesno("Start New Conversation",
                                         "Are you sure you want to start a new conversation?")
-            if not yesno:
-                return
-            else:
+            if yesno:
                 self.clear_conversation()
+            else:
+                return
 
         self.message = 'Start'
         self.started_conversation = True
@@ -580,7 +605,6 @@ class GUI:
     def load_previous_conversations(self):
         """Load the previously saved conversations"""
         self.started_conversation = False
-        self.previous_conversation_loaded = True
         # Clear existing items in the TreeView
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -620,7 +644,6 @@ class GUI:
 
     def load_selected_conversation(self, event):
         """Load the selected conversation"""
-        self.previous_conversation_loaded = True
         # Get the selected item from the TreeView
         selected_item = self.tree.selection()
         if not selected_item:  # Check if nothing is selected
@@ -654,6 +677,7 @@ class GUI:
         self.export_user_id = user_id
         conversation = self.backend.retrieve_previous_conversation(user_id, conversation_name)
         if conversation:
+            self.previous_conversation_loaded = True
             # Format the conversation for display
             self.formatted_conversation = self.backend.format_conversation(conversation)
             print("formatting done")

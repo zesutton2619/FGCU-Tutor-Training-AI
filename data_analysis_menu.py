@@ -51,20 +51,22 @@ class DataAnalysisMenu:
         self.controls_frame.pack(side=tb.BOTTOM, fill=tb.X, pady=10, expand=True)
 
         # Diagram frame
-        self.diagram_text = tb.Label(self.diagram_frame, text='Diagram', font=('Helvetica', 12))
+        self.diagram_text = tb.Label(self.diagram_frame, text='Diagram', font=('Helvetica', 14))
         self.diagram_text.grid(row=0, column=0, pady=5)
 
         self.diagram = tb.Label(self.diagram_frame, relief='solid', borderwidth=2, width=150)
-        self.diagram.grid(row=1, column=0, padx=(50, 10), pady=(20, 40))
+        self.diagram.grid(row=1, column=0, padx=(25, 10), pady=(20, 40))
 
-        self.evaluation_response_text = tb.Label(self.diagram_frame, text='Evaluation Response', font=('Helvetica', 12))
+        self.evaluation_response_text = tb.Label(self.diagram_frame, text='Evaluation Response', font=('Helvetica', 14))
         self.evaluation_response_text.grid(row=0, column=1, pady=5)
 
-        self.evaluation_text = tb.Text(self.diagram_frame, wrap=tb.WORD, state='disabled', width=150, height=40)
+        self.evaluation_text = tb.Text(self.diagram_frame, wrap=tb.WORD, state='disabled', width=80, height=30,
+                                       font=('Helvetica', 14))
         self.evaluation_text.grid(row=1, column=1)
 
-        self.confidence_meter = tb.Meter(self.diagram_frame, subtext='Confidence', amountused=0, amounttotal=100,
-                                         metersize=150)
+        self.confidence_meter = tb.Meter(self.diagram_frame, subtext='Confidence', textright='%',
+                                         amountused=0, amounttotal=100, metersize=150,
+                                         bootstyle='secondary', subtextstyle='primary', subtextfont=('Helvetica', 12))
         self.confidence_meter.grid(row=2, column=1, pady=(10, 0))
 
         # Controls frame
