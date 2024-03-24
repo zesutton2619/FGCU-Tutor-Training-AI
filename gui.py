@@ -176,7 +176,6 @@ class GUI:
         self.delete_button = None
         self.start_conversation_button = None
         self.view_data_analysis_button = None
-        self.evaluate_button = None
         self.info_label = None
         self.conversation_text = None
         self.export_conversation_name = None
@@ -204,6 +203,7 @@ class GUI:
         self.root.state('zoomed')
 
         self.main_frame = tb.Frame(self.root)
+        self.data_menu = None
         self.start_frame = None
 
         self.show_start_frame()
@@ -370,21 +370,22 @@ class GUI:
             self.backend.set_evaluate_conversation(True)
             response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
                                                       self.export_username, self.export_conversation_name)
-            self.conversation_text.config(state='normal')  # Set state too normal to allow editing
-            self.conversation_text.delete(1.0, tb.END)  # Clear existing conversation
-            self.conversation_text.insert(tb.END, response)  # Insert selected conversation
-            self.conversation_text.config(state='disabled')  # Set state to disabled to disable editing
+            self.data_menu.evaluation_text.config(state='normal')  # Set state too normal to allow editing
+            self.data_menu.evaluation_text.delete(1.0, tb.END)  # Clear existing conversation
+            self.data_menu.evaluation_text.insert(tb.END, response)  # Insert selected conversation
+            self.data_menu.evaluation_text.config(state='disabled')  # Set state to disabled to disable editing
             self.backend.set_evaluate_conversation(False)
         else:
             messagebox.showerror("Error", "Must select previous conversation to evaluate")
-        # if not self.previous_conversation_loaded:
-        #     return
+        if not self.previous_conversation_loaded:
+            return
 
     def data_analysis_menu(self):
         # Create Data Analysis Menu
         self.conversations_by_username = self.backend.conversations_by_username
-        DataAnalysisMenu(self.main_frame, self.backend, self.first_name, list(self.conversations_by_username.keys()),
-                         self.path)
+        self.data_menu = DataAnalysisMenu(self.main_frame, self.backend, self.first_name,
+                                          list(self.conversations_by_username.keys()),
+                                          self.path)
 
     def start_conversation(self):
         """Start a new conversation."""

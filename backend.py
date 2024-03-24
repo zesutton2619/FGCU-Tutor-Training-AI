@@ -604,7 +604,7 @@ class Backend:
 
     @staticmethod
     def create_bar_plot(data, title, x_label, y_label):
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(9, 6))
         plt.bar(list(data.keys()), list(data.values()), color='#004785')
         plt.xlabel(x_label)
         plt.ylabel(y_label)

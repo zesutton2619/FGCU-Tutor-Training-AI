@@ -18,6 +18,10 @@ class DataAnalysisMenu:
         self.diagram_frame = None
         self.controls_frame = None
         self.diagram = None
+        self.evaluation_response_text = None
+        self.evaluation_text = None
+        self.confidence_meter = None
+        self.diagram_text = None
         self.total_button = None
         self.totals_by_mode_button = None
         self.totals_by_tutor_button = None
@@ -40,20 +44,33 @@ class DataAnalysisMenu:
         main_frame.pack(fill=tb.BOTH, expand=True)
 
         # Create frames
-        self.diagram_frame = tb.Frame(main_frame, padding=(50, 50, 50, 50))  # Add padding here
+        self.diagram_frame = tb.Frame(main_frame, relief='solid')  # Add padding here
         self.diagram_frame.pack(side=tb.TOP, fill=tb.BOTH, expand=True)
 
         self.controls_frame = tb.Frame(main_frame)
-        self.controls_frame.pack(side=tb.BOTTOM, fill=tb.X)
+        self.controls_frame.pack(side=tb.BOTTOM, fill=tb.X, pady=10, expand=True)
 
         # Diagram frame
-        self.diagram = tb.Label(self.diagram_frame, relief='solid', borderwidth=2)
-        self.diagram.pack(fill=tb.BOTH, expand=True)
+        self.diagram_text = tb.Label(self.diagram_frame, text='Diagram', font=('Helvetica', 12))
+        self.diagram_text.grid(row=0, column=0, pady=5)
+
+        self.diagram = tb.Label(self.diagram_frame, relief='solid', borderwidth=2, width=150)
+        self.diagram.grid(row=1, column=0, padx=(50, 10), pady=(20, 40))
+
+        self.evaluation_response_text = tb.Label(self.diagram_frame, text='Evaluation Response', font=('Helvetica', 12))
+        self.evaluation_response_text.grid(row=0, column=1, pady=5)
+
+        self.evaluation_text = tb.Text(self.diagram_frame, wrap=tb.WORD, state='disabled', width=150, height=40)
+        self.evaluation_text.grid(row=1, column=1)
+
+        self.confidence_meter = tb.Meter(self.diagram_frame, subtext='Confidence', amountused=0, amounttotal=100,
+                                         metersize=150)
+        self.confidence_meter.grid(row=2, column=1, pady=(10, 0))
 
         # Controls frame
         self.total_button = tb.Button(self.controls_frame, text="Total Conversations",
                                       command=self.view_total_conversations)
-        self.total_button.grid(row=0, column=0, padx=(50, 0), pady=5)
+        self.total_button.grid(row=0, column=0, padx=(50, 0))
 
         self.mode_menu = tb.Menubutton(self.controls_frame, text='Select Mode', direction="above", style='secondary')
         self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
@@ -83,12 +100,6 @@ class DataAnalysisMenu:
         self.export_to_excel_button = tb.Button(self.controls_frame, text="Export To Excel",
                                                 command=self.export_to_excel)
         self.export_to_excel_button.grid(row=0, column=3, padx=10)
-
-        # Make the pop-up window modal (prevent interaction with other windows)
-        self.top.grab_set()
-
-        # Wait for the pop-up window to be closed before returning
-        self.top.wait_window()
 
     def select_mode(self, mode):
         self.selected_mode = mode
@@ -148,7 +159,7 @@ class DataAnalysisMenu:
 
                     # Display the image using Tkinter
                     self.plot_image_tk = ImageTk.PhotoImage(plot_image)
-                    self.diagram.configure(image=self.plot_image_tk)
+                    self.diagram.configure(image=self.plot_image_tk, relief='solid', borderwidth=2)
                 except Exception as e:
                     # If an error occurs during image loading or decryption, show an error message
                     error_label = tb.Label(self.top, text=f"Error: {str(e)}")
