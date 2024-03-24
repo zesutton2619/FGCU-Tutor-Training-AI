@@ -71,71 +71,71 @@ class Backend:
         self.evaluate_conversation = False
         self.generate_conversation_mode = ''
         self.conversations_by_username = {}
-        self.conversations_by_username = \
-            {
-                'Zach': {
-                    'Generate Conversation': ['Math Generated Conversation 4', 'Math Generated Conversation 3',
-                                              'Math Generated Conversation 1', 'Math Generated Conversation 2'],
-                    'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
-                              'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
-                    'Tutor': ['Math Tutor Conversation 1', 'Math Tutor Conversation 2']
-                },
-                'Test': {
-                    'Generate Conversation': ['Math Generated Conversation 1'],
-                    'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
-                              'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
-                    'Tutor': ['Math Tutor Conversation 1']
-                },
-                'John': {
-                    'Generate Conversation': ['Writing Generated Conversation 1'],
-                    'Tutee': ['Writing Tutee Conversation 4', 'Writing Tutee Conversation 3',
-                              'Writing Tutee Conversation 1', 'Writing Tutee Conversation 2'],
-                    'Tutor': ['Writing Tutor Conversation 1']
-                },
-                'Alice': {
-                    'Generate Conversation': ['Chemistry Generated Conversation 1'],
-                    'Tutee': ['Chemistry Tutee Conversation 4', 'Chemistry Tutee Conversation 3',
-                              'Chemistry Tutee Conversation 1', 'Chemistry Tutee Conversation 2'],
-                    'Tutor': ['Chemistry Tutor Conversation 1']
-                },
-                'Bob': {
-                    'Generate Conversation': ['Biology Generated Conversation 1'],
-                    'Tutee': ['Biology Tutee Conversation 4', 'Biology Tutee Conversation 3',
-                              'Biology Tutee Conversation 1', 'Biology Tutee Conversation 2'],
-                    'Tutor': ['Biology Tutor Conversation 1']
-                },
-                'Emma': {
-                    'Generate Conversation': ['Physics Generated Conversation 1'],
-                    'Tutee': ['Physics Tutee Conversation 4', 'Physics Tutee Conversation 3',
-                              'Physics Tutee Conversation 1', 'Physics Tutee Conversation 2'],
-                    'Tutor': ['Physics Tutor Conversation 1']
-                },
-                'David': {
-                    'Generate Conversation': ['Nursing Generated Conversation 1'],
-                    'Tutee': ['Nursing Tutee Conversation 4', 'Nursing Tutee Conversation 3',
-                              'Nursing Tutee Conversation 1', 'Nursing Tutee Conversation 2'],
-                    'Tutor': ['Nursing Tutor Conversation 1']
-                },
-                'Sophia': {
-                    'Generate Conversation': ['Business Generated Conversation 1'],
-                    'Tutee': ['Business Tutee Conversation 4', 'Business Tutee Conversation 3',
-                              'Business Tutee Conversation 1', 'Business Tutee Conversation 2'],
-                    'Tutor': ['Business Tutor Conversation 1']
-                },
-                'Michael': {
-                    'Generate Conversation': ['Math Generated Conversation 5', 'Math Generated Conversation 6',
-                                              'Math Generated Conversation 7', 'Math Generated Conversation 8'],
-                    'Tutee': ['Math Tutee Conversation 5', 'Math Tutee Conversation 6',
-                              'Math Tutee Conversation 7', 'Math Tutee Conversation 8'],
-                    'Tutor': ['Math Tutor Conversation 2']
-                },
-                'Sarah': {
-                    'Generate Conversation': ['Chemistry Generated Conversation 2'],
-                    'Tutee': ['Chemistry Tutee Conversation 5', 'Chemistry Tutee Conversation 6',
-                              'Chemistry Tutee Conversation 7', 'Chemistry Tutee Conversation 8'],
-                    'Tutor': ['Chemistry Tutor Conversation 2']
-                }
-            }
+        # self.conversations_by_username = \
+        #     {
+        #         'Zach': {
+        #             'Generate Conversation': ['Math Generated Conversation 4', 'Math Generated Conversation 3',
+        #                                       'Math Generated Conversation 1', 'Math Generated Conversation 2'],
+        #             'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+        #                       'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+        #             'Tutor': ['Math Tutor Conversation 1', 'Math Tutor Conversation 2']
+        #         },
+        #         'Test': {
+        #             'Generate Conversation': ['Math Generated Conversation 1'],
+        #             'Tutee': ['Math Tutee Conversation 4', 'Math Tutee Conversation 3',
+        #                       'Math Tutee Conversation 1', 'Math Tutee Conversation 2'],
+        #             'Tutor': ['Math Tutor Conversation 1']
+        #         },
+        #         'John': {
+        #             'Generate Conversation': ['Writing Generated Conversation 1'],
+        #             'Tutee': ['Writing Tutee Conversation 4', 'Writing Tutee Conversation 3',
+        #                       'Writing Tutee Conversation 1', 'Writing Tutee Conversation 2'],
+        #             'Tutor': ['Writing Tutor Conversation 1']
+        #         },
+        #         'Alice': {
+        #             'Generate Conversation': ['Chemistry Generated Conversation 1'],
+        #             'Tutee': ['Chemistry Tutee Conversation 4', 'Chemistry Tutee Conversation 3',
+        #                       'Chemistry Tutee Conversation 1', 'Chemistry Tutee Conversation 2'],
+        #             'Tutor': ['Chemistry Tutor Conversation 1']
+        #         },
+        #         'Bob': {
+        #             'Generate Conversation': ['Biology Generated Conversation 1'],
+        #             'Tutee': ['Biology Tutee Conversation 4', 'Biology Tutee Conversation 3',
+        #                       'Biology Tutee Conversation 1', 'Biology Tutee Conversation 2'],
+        #             'Tutor': ['Biology Tutor Conversation 1']
+        #         },
+        #         'Emma': {
+        #             'Generate Conversation': ['Physics Generated Conversation 1'],
+        #             'Tutee': ['Physics Tutee Conversation 4', 'Physics Tutee Conversation 3',
+        #                       'Physics Tutee Conversation 1', 'Physics Tutee Conversation 2'],
+        #             'Tutor': ['Physics Tutor Conversation 1']
+        #         },
+        #         'David': {
+        #             'Generate Conversation': ['Nursing Generated Conversation 1'],
+        #             'Tutee': ['Nursing Tutee Conversation 4', 'Nursing Tutee Conversation 3',
+        #                       'Nursing Tutee Conversation 1', 'Nursing Tutee Conversation 2'],
+        #             'Tutor': ['Nursing Tutor Conversation 1']
+        #         },
+        #         'Sophia': {
+        #             'Generate Conversation': ['Business Generated Conversation 1'],
+        #             'Tutee': ['Business Tutee Conversation 4', 'Business Tutee Conversation 3',
+        #                       'Business Tutee Conversation 1', 'Business Tutee Conversation 2'],
+        #             'Tutor': ['Business Tutor Conversation 1']
+        #         },
+        #         'Michael': {
+        #             'Generate Conversation': ['Math Generated Conversation 5', 'Math Generated Conversation 6',
+        #                                       'Math Generated Conversation 7', 'Math Generated Conversation 8'],
+        #             'Tutee': ['Math Tutee Conversation 5', 'Math Tutee Conversation 6',
+        #                       'Math Tutee Conversation 7', 'Math Tutee Conversation 8'],
+        #             'Tutor': ['Math Tutor Conversation 2']
+        #         },
+        #         'Sarah': {
+        #             'Generate Conversation': ['Chemistry Generated Conversation 2'],
+        #             'Tutee': ['Chemistry Tutee Conversation 5', 'Chemistry Tutee Conversation 6',
+        #                       'Chemistry Tutee Conversation 7', 'Chemistry Tutee Conversation 8'],
+        #             'Tutor': ['Chemistry Tutor Conversation 2']
+        #         }
+        #     }
 
         self.tutee_assistant_ids = {
             'Writing': 'asst_xqPTYqajw69DTFS2yidhYVBJ',
