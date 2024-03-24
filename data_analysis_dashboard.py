@@ -5,7 +5,7 @@ import io
 from PIL import Image, ImageTk
 
 
-class DataAnalysisMenu:
+class DataAnalysisDashboard:
     def __init__(self, master, backend, first_name, tutor_names, cwd):
         self.master = master
         self.backend = backend
@@ -177,4 +177,5 @@ class DataAnalysisMenu:
             error_label.pack()
 
     def export_to_excel(self):
-        pass
+        export_path = self.backend.export_conversations_to_excel()
+        messagebox.showinfo("Exported Path", f"Exported to: {export_path}")

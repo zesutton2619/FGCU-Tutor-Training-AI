@@ -2,7 +2,7 @@ import os
 import ttkbootstrap as tb
 from tkinter import messagebox, simpledialog, filedialog
 from backend import Backend
-from data_analysis_menu import DataAnalysisMenu
+from data_analysis_dashboard import DataAnalysisDashboard
 from PIL import Image, ImageTk
 from cryptography.fernet import Fernet
 import base64
@@ -232,9 +232,9 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        self.backend.check_username(first_name)
+        # TODO self.backend.check_username(first_name)
         self.backend.set_username(first_name)
-        self.backend.create_conversation_name()  # initialize conversation name
+        # TODO self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -352,7 +352,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        self.load_previous_conversations()
+        # TODO self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
@@ -379,17 +379,17 @@ class GUI:
         else:
             self.backend.set_evaluate_conversation(True)
             api_response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
-                                                      self.export_username, self.export_conversation_name)
-#             api_response = """To Zach: 1. Positives:
-#    - The tutor guided the tutee in setting up the equation correctly by using the formula distance = speed x time.
-#    - The tutor confirmed the tutee's answer after the calculation.
-#
-# 2. Suggestions for Improvement:
-#    - The tutor could have asked the tutee to provide an explanation of how they arrived at the final answer to ensure their understanding of the concept.
-#    - It would have been beneficial for the tutee's learning if the tutor had prompted the tutee to solve similar problems or provide more practice questions to reinforce the concept.
-#
-# 3. Confidence: 95%
-#             """
+                                                          self.export_username, self.export_conversation_name)
+            #             api_response = """To Zach: 1. Positives:
+            #    - The tutor guided the tutee in setting up the equation correctly by using the formula distance = speed x time.
+            #    - The tutor confirmed the tutee's answer after the calculation.
+            #
+            # 2. Suggestions for Improvement:
+            #    - The tutor could have asked the tutee to provide an explanation of how they arrived at the final answer to ensure their understanding of the concept.
+            #    - It would have been beneficial for the tutee's learning if the tutor had prompted the tutee to solve similar problems or provide more practice questions to reinforce the concept.
+            #
+            # 3. Confidence: 95%
+            #             """
             # Extracting confidence percentage using regular expression
             confidence_percentage = re.search(r'Confidence\D+(\d+)%', api_response)
             if confidence_percentage:
@@ -410,9 +410,9 @@ class GUI:
     def data_analysis_menu(self):
         # Create Data Analysis Menu
         self.conversations_by_username = self.backend.conversations_by_username
-        self.data_menu = DataAnalysisMenu(self.main_frame, self.backend, self.first_name,
-                                          list(self.conversations_by_username.keys()),
-                                          self.path)
+        self.data_menu = DataAnalysisDashboard(self.main_frame, self.backend, self.first_name,
+                                               list(self.conversations_by_username.keys()),
+                                               self.path)
 
     def start_conversation(self):
         """Start a new conversation."""
