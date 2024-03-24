@@ -369,6 +369,7 @@ class GUI:
         self.backend.create_conversation_name()
 
     def evaluate(self):
+        self.previous_conversation_loaded = True
         print("Previous Conversation Loaded: ", self.previous_conversation_loaded)
         if self.data_menu is None:
             messagebox.showerror("Error", "Must have Data Analysis Menu open")
@@ -379,17 +380,17 @@ class GUI:
         else:
             self.backend.set_evaluate_conversation(True)
             api_response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
-                                                          self.export_username, self.export_conversation_name)
-            #             api_response = """To Zach: 1. Positives:
-            #    - The tutor guided the tutee in setting up the equation correctly by using the formula distance = speed x time.
-            #    - The tutor confirmed the tutee's answer after the calculation.
+                                                      self.export_username, self.export_conversation_name)
+            # api_response = """To Zach: 1. **Positives**: - The tutor provided guidance on setting up the equation to solve the problem.
+            # - The tutor confirmed the correctness of the tutee's calculation and provided positive reinforcement.
             #
-            # 2. Suggestions for Improvement:
-            #    - The tutor could have asked the tutee to provide an explanation of how they arrived at the final answer to ensure their understanding of the concept.
-            #    - It would have been beneficial for the tutee's learning if the tutor had prompted the tutee to solve similar problems or provide more practice questions to reinforce the concept.
+            # 2. **Suggestions for Improvement**: - The tutor could have asked the tutee to explain the process of setting up the equation to ensure understanding.
+            # - It would have been beneficial for the tutor to ask follow-up questions to further reinforce the concept and ensure the tutee's comprehension was solid.
             #
-            # 3. Confidence: 95%
-            #             """
+            # 3. **Quality of Conversation**: 60%
+            #
+            # 4. **Confidence** : 80%
+            # """
             # Extracting confidence percentage using regular expression
             confidence_percentage = re.search(r'Confidence\D+(\d+)%', api_response)
             if confidence_percentage:
@@ -397,9 +398,21 @@ class GUI:
                 # Update meter widget with confidence percentage
                 self.data_menu.confidence_meter.configure(amountused=confidence)
 
+            # Extracting quality percentage using regular expression
+            quality_percentage = re.search(r'Quality of Conversation\D+(\d+)%', api_response)
+            if quality_percentage:
+                quality = int(quality_percentage.group(1))
+                # Update quality meter widget with quality percentage
+                self.data_menu.quality_meter.configure(amountused=quality)
+
             # Removing all numbering except "1." and "2."
+            # Extracting positives and suggestions using regular expression
+            extracted_info = re.findall(r'\d+\.\s*(.*?)\s*:\s*(.*?)(?=\d+\.\s*|\Z)', api_response, re.DOTALL)
+
+            # Building response from extracted positives and suggestions
             response = re.sub(r'\b(?!1\.|2\.)\d+\.', '', api_response)
             response = re.sub(r'Confidence\D+\d+%', '', response)
+            response = re.sub(r'Quality of Conversation\D+(\d+)%', '', response)
 
             self.data_menu.evaluation_text.config(state='normal')  # Set state to normal to allow editing
             self.data_menu.evaluation_text.delete(1.0, tb.END)  # Clear existing conversation

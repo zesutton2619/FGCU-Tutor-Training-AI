@@ -20,6 +20,7 @@ class DataAnalysisDashboard:
         self.diagram = None
         self.evaluation_response_text = None
         self.evaluation_text = None
+        self.quality_meter = None
         self.confidence_meter = None
         self.diagram_text = None
         self.total_button = None
@@ -44,7 +45,7 @@ class DataAnalysisDashboard:
         main_frame.pack(fill=tb.BOTH, expand=True)
 
         # Create frames
-        self.diagram_frame = tb.Frame(main_frame, relief='solid')  # Add padding here
+        self.diagram_frame = tb.Frame(main_frame)  # Add padding here
         self.diagram_frame.pack(side=tb.TOP, fill=tb.BOTH, expand=True)
 
         self.controls_frame = tb.Frame(main_frame)
@@ -64,10 +65,18 @@ class DataAnalysisDashboard:
                                        font=('Helvetica', 14))
         self.evaluation_text.grid(row=1, column=1)
 
-        self.confidence_meter = tb.Meter(self.diagram_frame, subtext='Confidence', textright='%',
+        meter_frame = tb.Frame(self.diagram_frame)
+        meter_frame.grid(row=2, column=1, columnspan=2, pady=(20, 10), sticky="ew")
+
+        self.quality_meter = tb.Meter(meter_frame, subtext='Quality', textright='%',
+                                      amountused=0, amounttotal=100, metersize=150,
+                                      bootstyle='secondary', subtextstyle='primary', subtextfont=('Helvetica', 12))
+        self.quality_meter.grid(row=0, column=0, padx=(250, 50))
+
+        self.confidence_meter = tb.Meter(meter_frame, subtext='Confidence', textright='%',
                                          amountused=0, amounttotal=100, metersize=150,
                                          bootstyle='secondary', subtextstyle='primary', subtextfont=('Helvetica', 12))
-        self.confidence_meter.grid(row=2, column=1, pady=(10, 0))
+        self.confidence_meter.grid(row=0, column=1, padx=(50, 250))
 
         # Controls frame
         self.total_button = tb.Button(self.controls_frame, text="Total Conversations",
@@ -161,7 +170,7 @@ class DataAnalysisDashboard:
 
                     # Display the image using Tkinter
                     self.plot_image_tk = ImageTk.PhotoImage(plot_image)
-                    self.diagram.configure(image=self.plot_image_tk, relief='solid', borderwidth=2)
+                    self.diagram.configure(image=self.plot_image_tk)
                 except Exception as e:
                     # If an error occurs during image loading or decryption, show an error message
                     error_label = tb.Label(self.top, text=f"Error: {str(e)}")
