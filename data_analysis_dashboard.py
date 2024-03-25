@@ -34,7 +34,7 @@ class DataAnalysisDashboard:
 
     def data_analysis_menu(self):
         self.top = tb.Toplevel()
-        self.top.title("Data Analysis")
+        self.top.title("Data Analysis Dashboard")
         self.top.state('zoomed')
 
         # Set minimum size for the window

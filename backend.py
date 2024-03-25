@@ -59,6 +59,7 @@ class Backend:
         self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         self.conversations_table = self.dynamodb.Table('Conversations')
         self.user_id_table = self.dynamodb.Table('User_ID')
+        self.evaluations_table = self.dynamodb.Table('Evaluations')
         self.caa_key = os.environ.get("KEY")
         self.fernet = Fernet(self.caa_key)
         self.diagram_directory = ''
@@ -428,6 +429,29 @@ class Backend:
 
         self.conversations_table.put_item(Item=item)
 
+    def store_evaluation(self, user_id, conversation_name, quality, confidence, response):
+        user_id_response = self.user_id_table.query(
+            KeyConditionExpression=Key('user_id').eq(user_id)
+        )
+        # Extract the username from the response
+        username = user_id_response['Items'][0]['username'] if user_id_response['Items'] else None
+
+        current_time = datetime.datetime.now().isoformat()
+
+        item = {
+                'user_id': user_id,
+                'username': username,
+                'conversation_name': conversation_name,
+                'quality': quality,
+                'confidence': confidence,
+                'response': response,
+                'time': current_time
+            }
+
+        print("Item stored in evaluations: ", item)
+
+        self.evaluations_table.put_item(Item=item)
+
     def retrieve_conversations_by_mode(self, user_id):
         """
         Retrieves conversations for a user grouped by mode.
@@ -692,7 +716,10 @@ class Backend:
             combined_messages = sorted(user_messages + assistant_messages, key=lambda x: x['timestamp'])
 
             for message in combined_messages:
-                role = username if message in user_messages else f'{subject} Tutee'
+                if mode == "Tutee" or mode == "Generate Conversation":
+                    role = username if message in user_messages else f'{subject} Tutee'
+                else:
+                    role = username if message in user_messages else f'{subject} Tutor'
 
                 content = message["content"]
                 timestamp = message["timestamp"]

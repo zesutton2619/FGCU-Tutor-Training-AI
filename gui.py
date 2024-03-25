@@ -369,6 +369,8 @@ class GUI:
         self.backend.create_conversation_name()
 
     def evaluate(self):
+        quality = 0
+        confidence = 0
         self.previous_conversation_loaded = True
         print("Previous Conversation Loaded: ", self.previous_conversation_loaded)
         if self.data_menu is None:
@@ -380,7 +382,7 @@ class GUI:
         else:
             self.backend.set_evaluate_conversation(True)
             api_response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
-                                                      self.export_username, self.export_conversation_name)
+                                                          self.export_username, self.export_conversation_name)
             # api_response = """To Zach: 1. **Positives**: - The tutor provided guidance on setting up the equation to solve the problem.
             # - The tutor confirmed the correctness of the tutee's calculation and provided positive reinforcement.
             #
@@ -407,7 +409,7 @@ class GUI:
 
             # Removing all numbering except "1." and "2."
             # Extracting positives and suggestions using regular expression
-            extracted_info = re.findall(r'\d+\.\s*(.*?)\s*:\s*(.*?)(?=\d+\.\s*|\Z)', api_response, re.DOTALL)
+            # extracted_info = re.findall(r'\d+\.\s*(.*?)\s*:\s*(.*?)(?=\d+\.\s*|\Z)', api_response, re.DOTALL)
 
             # Building response from extracted positives and suggestions
             response = re.sub(r'\b(?!1\.|2\.)\d+\.', '', api_response)
@@ -419,6 +421,8 @@ class GUI:
             self.data_menu.evaluation_text.insert(tb.END, response)  # Insert selected conversation
             self.data_menu.evaluation_text.config(state='disabled')  # Set state to disabled to disable editing
             self.backend.set_evaluate_conversation(False)
+            self.backend.store_evaluation(self.export_user_id, self.export_conversation_name, quality, confidence,
+                                          response)
 
     def data_analysis_menu(self):
         # Create Data Analysis Menu
@@ -429,6 +433,7 @@ class GUI:
 
     def start_conversation(self):
         """Start a new conversation."""
+        print("Previous conversation loaded: ", self.previous_conversation_loaded)
         if self.previous_conversation_loaded:
             yesno = messagebox.askyesno("Start New Conversation",
                                         "Are you sure you want to start a new conversation?")
