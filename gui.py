@@ -168,6 +168,7 @@ class GUI:
         self.tree_frame = None
         self.exit_and_export_frame = None
         self.mode_menu = None
+        self.course_menu = None
         self.subject_menu = None
         self.tree = None
         self.scrollbar = None
@@ -191,6 +192,7 @@ class GUI:
         self.message = None
         self.first_name = None
         self.subject = None
+        self.course = None
         self.mode = None
         self.conversations_by_username = None
         self.conversations_by_mode = None
@@ -252,18 +254,6 @@ class GUI:
         self.info_label = tb.Label(self.info_frame, text=f'Name: {self.first_name}', font=('Helvetica', 12))
         self.info_label.pack(side=tb.LEFT)
 
-        # Create the mode_menu and pack it to the right of the info label
-        style = tb.Style()
-        style.configure('TMenubutton', font=('Helvetica', 12), width=20)
-        self.mode_menu = tb.Menubutton(self.info_frame, text=f'{self.mode}', direction="below", style='secondary')
-        self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
-        self.mode_menu.configure(menu=self.mode_menu.menu)
-        self.mode_menu.menu.configure(font=('Helvetica', 12))
-        modes = ['Tutor', 'Tutee', 'Generate Conversation']
-        for mode in modes:
-            self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.change_mode(m))
-        self.mode_menu.pack(side=tb.LEFT, padx=5)
-
         if self.first_name == 'CAA Staff':
             self.view_data_analysis_button = tb.Button(self.info_frame, text='View Data Analysis',
                                                        command=self.data_analysis_menu, style='secondary')
@@ -299,6 +289,46 @@ class GUI:
         self.delete_button.pack(side=tb.RIGHT, padx=5)
 
         if self.first_name != 'CAA Staff':
+            # Create the mode_menu and pack it to the right of the info label
+            style = tb.Style()
+            style.configure('TMenubutton', font=('Helvetica', 12), width=20)
+            self.mode_menu = tb.Menubutton(self.info_frame, text=f'{self.mode}', direction="below", style='secondary')
+            self.mode_menu.menu = tb.Menu(self.mode_menu, tearoff=False)
+            self.mode_menu.configure(menu=self.mode_menu.menu)
+            self.mode_menu.menu.configure(font=('Helvetica', 12))
+            modes = ['Tutor', 'Tutee', 'Generate Conversation']
+            for mode in modes:
+                self.mode_menu.menu.add_command(label=mode, command=lambda m=mode: self.change_mode(m))
+            self.mode_menu.pack(side=tb.LEFT, padx=5)
+            if self.subject != "Writing" and self.mode == "Tutee":
+                self.course_menu = tb.Menubutton(self.info_frame, text='Select Course', direction="below",
+                                                 style='secondary')
+                self.course_menu.menu = tb.Menu(self.course_menu, tearoff=False)
+                self.course_menu.configure(menu=self.course_menu.menu)
+                self.course_menu.menu.configure(font=('Helvetica', 12))
+                # ["Writing", "Chemistry", "Biology", "Physics", "Nursing", "Math", "Business"]
+                courses = []
+                if self.subject == "Chemistry":
+                    courses = ['General Chemistry 1', 'General Chemistry 2', 'Organic Chemistry 1',
+                               'Organic Chemistry 2']
+                elif self.subject == "Biology":
+                    courses = ['General Biology 1', 'General Biology 2', 'General Microbiology', 'Human Systems',
+                               'Anatomy & Physiology 1', 'Anatomy & Physiology 2']
+                elif self.subject == "Physics":
+                    courses = ['General Physics 1', 'General Physics 2', 'College Physics 1', 'College Physics 2']
+                elif self.subject == "Nursing":
+                    courses = ['Pathophysiology for Nursing', 'Pharmacology for Nursing', '']
+                elif self.subject == "Math":
+                    courses = ['College Algebra', 'Intermediate Algebra', 'Precalculus', 'Elementary Calculus',
+                               'Calculus 1', 'Calculus 2', 'Calculus 3', 'Differential Equations',
+                               'Discrete Mathematics',
+                               'Linear Algebra', 'Mathematical Foundations', 'Statical Methods']
+                elif self.subject == "Business":
+                    courses = ['Business Finance', 'Intro to Financial Accounting', 'Intro to Managerial Accounting']
+                for course in courses:
+                    self.course_menu.menu.add_command(label=course, command=lambda c=course: self.change_course(c))
+                self.course_menu.pack(side=tb.LEFT, padx=5)
+
             # Add the entry box
             if self.mode != 'Generate Conversation':
                 self.message_entry = tb.Text(self.input_frame, wrap=tb.WORD, height=3, width=45, font=('Helvetica', 12))
@@ -368,6 +398,10 @@ class GUI:
         self.show_main_frame()
         self.backend.create_conversation_name()
 
+    def change_course(self, course_name):
+        self.course = course_name
+        self.course_menu.configure(text=course_name)
+
     def evaluate(self):
         quality = 0
         confidence = 0
@@ -381,8 +415,9 @@ class GUI:
             return
         else:
             self.backend.set_evaluate_conversation(True)
+            print("Formatted Conversation: ", self.formatted_conversation)
             api_response = self.backend.generate_response(self.formatted_conversation, self.export_user_id,
-                                                          self.export_username, self.export_conversation_name)
+                                                          self.export_username, self.export_conversation_name, '')
             # api_response = """To Zach: 1. **Positives**: - The tutor provided guidance on setting up the equation to solve the problem.
             # - The tutor confirmed the correctness of the tutee's calculation and provided positive reinforcement.
             #
@@ -464,14 +499,15 @@ class GUI:
 
         if self.mode == 'Generate Conversation':
             response = self.backend.generate_response('Continue Conversation', user_id,
-                                                      self.first_name, conversation_name)
+                                                      self.first_name, conversation_name, self.course)
             self.conversation_text.insert(tb.END, f"{response}\n\n")
 
         else:
 
             message = self.message_entry.get("1.0", tb.END)
             if self.message == 'Start':
-                response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name)
+                response = self.backend.generate_response(self.message, user_id, self.first_name, conversation_name,
+                                                          self.course)
                 self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
                 self.message = ''
             elif message == '' and self.started_conversation:
@@ -479,7 +515,8 @@ class GUI:
                 return
             else:
                 self.conversation_text.insert(tb.END, f"{self.first_name}: {message}\n")
-                response = self.backend.generate_response(message, user_id, self.first_name, conversation_name)
+                response = self.backend.generate_response(message, user_id, self.first_name, conversation_name,
+                                                          self.course)
                 self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
 
             # Clear the entry box after adding the message

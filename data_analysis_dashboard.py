@@ -55,13 +55,13 @@ class DataAnalysisDashboard:
         self.diagram_text = tb.Label(self.diagram_frame, text='Diagram', font=('Helvetica', 14))
         self.diagram_text.grid(row=0, column=0, pady=5)
 
-        self.diagram = tb.Label(self.diagram_frame, relief='solid', borderwidth=2, width=150)
+        self.diagram = tb.Label(self.diagram_frame, relief='solid', borderwidth=2, width=125)
         self.diagram.grid(row=1, column=0, padx=(25, 10), pady=(20, 40))
 
         self.evaluation_response_text = tb.Label(self.diagram_frame, text='Evaluation Response', font=('Helvetica', 14))
         self.evaluation_response_text.grid(row=0, column=1, pady=5)
 
-        self.evaluation_text = tb.Text(self.diagram_frame, wrap=tb.WORD, state='disabled', width=80, height=30,
+        self.evaluation_text = tb.Text(self.diagram_frame, wrap=tb.WORD, state='disabled', width=60, height=25,
                                        font=('Helvetica', 14))
         self.evaluation_text.grid(row=1, column=1)
 
