@@ -1,4 +1,4 @@
-import gui
+from GUIs import gui
 from tkinter import messagebox
 
 

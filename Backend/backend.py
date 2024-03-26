@@ -364,7 +364,7 @@ class Backend:
         """
         if self.evaluate_conversation:
             # assistant_id = 'asst_siJtmiaoyNlExZQ8V8OXEQG5'
-            assistant_id = 'asst_lOHaQVOxqzx29Ymk0wbY9ard'
+            assistant_id = 'asst_lOHaQVOxqzx29Ymk0wbY9ard'  # no documents
         elif self.global_mode == 'Generate Conversation':
             assistant_id = self.generate_conversation_ids[self.global_subject]
         elif self.global_mode == 'Tutee':
@@ -638,7 +638,7 @@ class Backend:
 
         os.remove(plot_filename)
 
-    def export_conversations_to_excel(self, excel_filename='conversations_data.xlsx'):
+    def export_conversations_to_excel(self, directory, excel_filename='conversations_data.xlsx'):
         # Total conversations per mode
         modes = ["Generate Conversation", "Tutor", "Tutee"]
         total_mode_counts = {mode: 0 for mode in modes}
@@ -651,7 +651,7 @@ class Backend:
                     total_mode_counts[mode] += count
                     mode_tutor_counts[username][mode] = count
 
-        path = os.path.join(os.getcwd(), excel_filename)
+        path = os.path.join(directory, excel_filename)
         # Create Excel writer object
         with pd.ExcelWriter(path) as writer:
             # Create DataFrame for total conversations per mode

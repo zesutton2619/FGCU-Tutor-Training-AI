@@ -1,5 +1,5 @@
 import ttkbootstrap as tb
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import os
 import io
 from PIL import Image, ImageTk
@@ -186,5 +186,6 @@ class DataAnalysisDashboard:
             error_label.pack()
 
     def export_to_excel(self):
-        export_path = self.backend.export_conversations_to_excel()
+        directory = filedialog.askdirectory(initialdir=os.getcwd())
+        export_path = self.backend.export_conversations_to_excel(directory)
         messagebox.showinfo("Exported Path", f"Exported to: {export_path}")
