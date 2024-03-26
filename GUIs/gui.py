@@ -90,9 +90,9 @@ class GUI:
         self.backend.set_subject(subject)
         self.backend.set_mode(mode)
         print(first_name, subject, mode)
-        self.backend.check_username(first_name)
+        # TODO self.backend.check_username(first_name)
         self.backend.set_username(first_name)
-        self.backend.create_conversation_name()  # initialize conversation name
+        # TODO self.backend.create_conversation_name()  # initialize conversation name
         if self.start_frame:
             self.start_frame.frame.pack_forget()  # Hide the start frame
         self.show_main_frame()
@@ -238,7 +238,7 @@ class GUI:
         self.export_button.pack(side=tb.RIGHT, anchor='se', padx=(10, 0), pady=5)
 
         # Load previous conversations into the TreeView
-        self.load_previous_conversations()
+        # TODO self.load_previous_conversations()
 
         # Bind the tree selection event to load the selected conversation
         self.tree.bind('<<TreeviewSelect>>', self.load_selected_conversation)
@@ -312,6 +312,7 @@ class GUI:
             self.data_menu.evaluation_text.insert(tb.END, response)  # Insert selected conversation
             self.data_menu.evaluation_text.config(state='disabled')  # Set state to disabled to disable editing
             self.backend.set_evaluate_conversation(False)
+            print("Export user_id:", self.export_user_id, "Export Conversation Name:", self.export_conversation_name)
             self.backend.store_evaluation(self.export_user_id, self.export_conversation_name, quality, confidence,
                                           response)
 

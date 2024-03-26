@@ -7,6 +7,7 @@ from docx import Document
 from fpdf import FPDF
 import time
 import os
+from datetime import datetime
 import datetime
 import random
 import pandas as pd
@@ -443,15 +444,18 @@ class Backend:
 
         current_time = datetime.datetime.now().isoformat()
 
+        primary_key = f"{user_id}_{current_time}"
+
         item = {
-                'user_id': user_id,
-                'username': username,
-                'conversation_name': conversation_name,
-                'quality': quality,
-                'confidence': confidence,
-                'response': response,
-                'time': current_time
-            }
+            'user_id_timestamp': primary_key,  # Change this to your primary key attribute
+            'user_id': user_id,
+            'username': username,
+            'conversation_name': conversation_name,
+            'quality': quality,
+            'confidence': confidence,
+            'response': response,
+            'time': current_time
+        }
 
         print("Item stored in evaluations: ", item)
 
@@ -618,6 +622,80 @@ class Backend:
         self.create_bar_plot(mode_counts, f"Total Number of Conversations by Tutor {user}", "Mode",
                              "Number of Conversations")
         self.save_encrypted_plot(f"Total Number of Conversations by Tutor {user}")
+        plt.show()
+
+    def make_quality_over_time_by_tutor(self, tutor):
+        response = self.evaluations_table.scan(FilterExpression=Attr('username').eq(tutor))
+        evaluations = response['Items']
+        # evaluations = [
+        #     {
+        #         "user_id_timestamp": "938_2024-03-26T00:33:34.151111",
+        #         "user_id": 938,
+        #         "confidence": 90,
+        #         "conversation_name": "Math Generated Conversation 7",
+        #         "quality": 85,
+        #         "response": "1. Positives: The tutor greeted the tutee warmly, encouraged their effort, and provided a clear example to explain the concept effectively. The tutor also offered the tutee an opportunity to try solving a problem on their own.\n2. Suggestions for Improvement: The tutor could have asked the tutee more interactive questions to gauge their understanding along the way, rather than assuming comprehension. Additionally, providing additional examples or practice problems could further solidify the tutee's understanding.\n \n ",
+        #         "time": "2024-03-26T00:33:34.151111",
+        #         "username": "Zach"
+        #     },
+        #     {
+        #         "user_id_timestamp": "938_2024-03-27T10:45:22.321111",
+        #         "user_id": 938,
+        #         "confidence": 88,
+        #         "conversation_name": "Math Generated Conversation 8",
+        #         "quality": 80,
+        #         "response": "1. Positives: The tutor explained complex concepts in a simplified manner, which helped the tutee understand better. The tutor also encouraged the tutee to ask questions, fostering a collaborative learning environment.\n2. Suggestions for Improvement: The tutor could have provided additional resources or references for further self-study. Encouraging more independent problem-solving could also enhance the tutee's learning experience.\n \n ",
+        #         "time": "2024-03-27T10:45:22.321111",
+        #         "username": "Zach"
+        #     },
+        #     {
+        #         "user_id_timestamp": "938_2024-03-28T14:20:15.512111",
+        #         "user_id": 938,
+        #         "confidence": 92,
+        #         "conversation_name": "Math Generated Conversation 9",
+        #         "quality": 88,
+        #         "response": "1. Positives: The tutor demonstrated a strong understanding of the subject matter and provided detailed explanations for each step of the problem-solving process. The tutor also tailored the explanation to the tutee's learning pace.\n2. Suggestions for Improvement: The tutor could incorporate more visual aids or real-life examples to further clarify abstract concepts. Encouraging the tutee to articulate their thought process could also enhance learning.\n \n ",
+        #         "time": "2024-03-28T14:20:15.512111",
+        #         "username": "Zach"
+        #     },
+        #     {
+        #         "user_id_timestamp": "938_2024-03-29T16:55:09.713111",
+        #         "user_id": 938,
+        #         "confidence": 85,
+        #         "conversation_name": "Math Generated Conversation 10",
+        #         "quality": 82,
+        #         "response": "1. Positives: The tutor maintained a positive attitude throughout the session, which motivated the tutee to engage actively. The tutor also provided constructive feedback to help the tutee improve.\n2. Suggestions for Improvement: The tutor could allocate more time for practice exercises to reinforce learning. Incorporating interactive quizzes or games could make the session more engaging.\n \n ",
+        #         "time": "2024-03-29T16:55:09.713111",
+        #         "username": "Zach"
+        #     }
+        # ]
+        print("Evaluations table: ", evaluations)
+        if not evaluations:
+            print(f"No evaluations found for tutor '{tutor}'.")
+            return
+
+        quality_scores = []
+        timestamps = []
+
+        for evaluation in evaluations:
+            quality_scores.append(evaluation['quality'])
+            timestamp = evaluation['time']
+            parsed_time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+            formatted_time = parsed_time.strftime(
+                "%Y-%m-%d %I:%M %p")  # Format as desired, e.g., "%Y-%m-%d %I:%M %p" for 12-hour format
+            timestamps.append(formatted_time)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(timestamps, quality_scores, marker='o', linestyle='-')
+        plt.xlabel('Time')
+        plt.ylabel('Quality')
+        plt.title(f'{tutor} Quality Over Time')
+        plt.gca().xaxis.set_major_locator(MaxNLocator(prune='both'))  # Auto format x-axis labels
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+
+        self.save_encrypted_plot(f"{tutor}_Quality_Over_Time")
+
         plt.show()
 
     def save_encrypted_plot(self, title):

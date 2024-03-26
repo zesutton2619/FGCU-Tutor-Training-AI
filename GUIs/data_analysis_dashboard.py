@@ -26,6 +26,7 @@ class DataAnalysisDashboard:
         self.total_button = None
         self.totals_by_mode_button = None
         self.totals_by_tutor_button = None
+        self.quality_over_time_button = None
         self.export_to_excel_button = None
         self.mode_menu = None
         self.tutor_menu = None
@@ -71,12 +72,12 @@ class DataAnalysisDashboard:
         self.quality_meter = tb.Meter(meter_frame, subtext='Quality', textright='%',
                                       amountused=0, amounttotal=100, metersize=150,
                                       bootstyle='secondary', subtextstyle='primary', subtextfont=('Helvetica', 12))
-        self.quality_meter.grid(row=0, column=0, padx=(250, 50))
+        self.quality_meter.grid(row=0, column=0, padx=(225, 50))
 
         self.confidence_meter = tb.Meter(meter_frame, subtext='Confidence', textright='%',
                                          amountused=0, amounttotal=100, metersize=150,
                                          bootstyle='secondary', subtextstyle='primary', subtextfont=('Helvetica', 12))
-        self.confidence_meter.grid(row=0, column=1, padx=(50, 250))
+        self.confidence_meter.grid(row=0, column=1, padx=(50, 225))
 
         # Controls frame
         self.total_button = tb.Button(self.controls_frame, text="Total Conversations",
@@ -106,7 +107,11 @@ class DataAnalysisDashboard:
 
         self.totals_by_tutor_button = tb.Button(self.controls_frame, text="Plot Totals by Tutor",
                                                 command=self.view_total_conversations_by_tutor)
-        self.totals_by_tutor_button.grid(row=1, column=2, padx=10, pady=(0, 20))
+        self.totals_by_tutor_button.grid(row=1, column=2, padx=10, pady=(0, 10))
+
+        self.quality_over_time_button = tb.Button(self.controls_frame, text="Plot Quality by Tutor",
+                                                  command=self.view_quality_over_time_by_tutor)
+        self.quality_over_time_button.grid(row=2, column=2, pady=(0, 10))
 
         self.export_to_excel_button = tb.Button(self.controls_frame, text="Export To Excel",
                                                 command=self.export_to_excel)
@@ -153,6 +158,15 @@ class DataAnalysisDashboard:
         encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams',
                                                  f'total_number_of_conversations_by_tutor_'
                                                  f'{self.selected_tutor}_plot.enc')
+        self.plot_diagram(encrypted_plot_image_path)
+
+    def view_quality_over_time_by_tutor(self):
+        if self.selected_tutor is None:
+            messagebox.showerror("Error", "Must select tutor")
+            return
+        self.backend.make_quality_over_time_by_tutor(self.selected_tutor)
+        encrypted_plot_image_path = os.path.join(os.getcwd(), f'{self.first_name} Diagrams',
+                                                 f'{self.selected_tutor}_quality_over_time_plot.enc')
         self.plot_diagram(encrypted_plot_image_path)
 
     def plot_diagram(self, encrypted_path):
