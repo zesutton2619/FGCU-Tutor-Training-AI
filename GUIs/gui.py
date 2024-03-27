@@ -180,7 +180,8 @@ class GUI:
                                'Discrete Mathematics',
                                'Linear Algebra', 'Mathematical Foundations', 'Statical Methods']
                 elif self.subject == "Business":
-                    courses = ['Business Finance', 'Intro to Financial Accounting', 'Intro to Managerial Accounting']
+                    courses = ['Business Finance', 'Intro to Financial Accounting', 'Intro to Managerial Accounting',
+                               "Macroeconomics", "Microeconomics"]
                 for course in courses:
                     self.course_menu.menu.add_command(label=course, command=lambda c=course: self.change_course(c))
                 self.course_menu.pack(side=tb.LEFT, padx=5)
@@ -609,6 +610,7 @@ class GUI:
     def exit(self):
         """Exit the program and show the Start Frame"""
         self.previous_conversations_loaded = False
+        self.course = ''
         self.clear_conversation()
         self.show_start_frame()
 
