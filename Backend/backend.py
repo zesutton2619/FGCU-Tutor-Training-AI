@@ -55,7 +55,7 @@ class Backend:
             Initializes the Backend object.
         """
         OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-        os.environ['AWS_PROFILE'] = "Zach-Test"
+        os.environ['AWS_PROFILE'] = "Mikayla-Test"
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         self.conversations_table = self.dynamodb.Table('Conversations')
