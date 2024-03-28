@@ -510,7 +510,7 @@ class GUI:
                 else:
                     user_id = self.backend.get_user_id()
                 self.backend.remove_conversation(conversation_name, user_id)
-                self.load_previous_conversations()
+                self.tree.delete(selected_item)
                 self.clear_conversation()
                 print("Deleting conversation")
         else:
