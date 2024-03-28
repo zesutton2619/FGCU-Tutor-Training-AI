@@ -341,7 +341,7 @@ class GUI:
 
     def add_message(self):
         """Add messages to the conversation."""
-        if not self.started_conversation and self.previous_conversation_loaded:
+        if not self.started_conversation:
             if self.mode == 'Generate Conversation':
                 messagebox.showwarning('Error', 'You must generate a conversation first')
             else:
@@ -368,7 +368,8 @@ class GUI:
                                                           self.course)
                 self.conversation_text.insert(tb.END, f"{self.subject} {self.mode}: {response}\n\n")
                 self.message = ''
-            elif message == '' and self.started_conversation:
+            elif message.strip() == '' and self.started_conversation:
+                self.conversation_text.config(state='disabled')
                 messagebox.showwarning('Error', 'Enter a message')
                 return
             else:
